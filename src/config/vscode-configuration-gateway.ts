@@ -31,6 +31,8 @@ export class VsCodeConfigurationGateway implements ConfigurationGateway {
       voiceLanguageConfigured: this.isExplicitlyConfigured(configuration, 'voice.language'),
       voiceRate: Math.min(2, Math.max(0.5, configuredRate)),
       voiceRateConfigured: this.isExplicitlyConfigured(configuration, 'voice.rate'),
+      voiceVolume: Math.min(100, Math.max(0, configuration.get<number>('voice.volume', 100))),
+      ...this.optionalVoiceName(configuration),
       accessibilityProfile: this.isProfileId(configuredProfile)
         ? configuredProfile
         : DEFAULT_PROFILE,
@@ -38,6 +40,13 @@ export class VsCodeConfigurationGateway implements ConfigurationGateway {
       autoReadSummaries: configuration.get<boolean>('autoReadSummaries', false),
       autoReadSummariesConfigured: this.isExplicitlyConfigured(configuration, 'autoReadSummaries'),
     };
+  }
+
+  private optionalVoiceName(
+    configuration: vscode.WorkspaceConfiguration,
+  ): Readonly<{ voiceName?: string }> {
+    const voiceName = configuration.get<string>('voice.name', '').trim();
+    return voiceName.length === 0 ? {} : { voiceName };
   }
 
   public onDidChange(listener: (configuration: CodeSpeakConfiguration) => void): () => void {

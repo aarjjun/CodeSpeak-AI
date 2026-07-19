@@ -11,6 +11,7 @@ import { ExplainSelection } from '../../application/use-cases/ai/explain-selecti
 import { GenerateCode } from '../../application/use-cases/ai/generate-code';
 import { GenerateDocumentation } from '../../application/use-cases/ai/generate-documentation';
 import { GenerateCodeSummary } from '../../application/use-cases/ai/generate-code-summary';
+import { AssistLearning } from '../../application/use-cases/ai/assist-learning';
 import { NavigateDiagnostics } from '../../application/use-cases/diagnostics/navigate-diagnostics';
 import { EditorHistory } from '../../application/use-cases/workspace/editor-history';
 import { GoToLine } from '../../application/use-cases/workspace/go-to-line';
@@ -22,11 +23,20 @@ import {
   documentationGenerationParser,
   codeSummaryParser,
   generatedCodeParser,
+  learningAssistanceParser,
 } from '../../infrastructure/ai/validation/ai-output-parsers';
 import { VoiceIntentParser } from '../../application/services/voice-intent-parser';
+import { VoiceIntentResolver } from '../../application/services/voice-intent-resolver';
 import { VoiceIntentExecutor } from '../voice/voice-intent-executor';
 import { VsCodeDictationController } from '../voice/vscode-dictation-controller';
 import { SpeakSelection } from '../../application/use-cases/speech/speak-selection';
+import { FocusTimerController } from '../accessibility/focus-timer-controller';
+import { AccessibleSpeechService } from '../../application/services/accessible-speech-service';
+import { BlindContextReader } from '../accessibility/blind-context-reader';
+import { CopilotChatIntegration } from '../integrations/copilot-chat-integration';
+import { VoiceFolderController } from '../accessibility/voice-folder-controller';
+import { AudioCueService } from '../../infrastructure/speech/audio-cue-service';
+import { VoiceCommandHelp } from '../accessibility/voice-command-help';
 
 type CommandCallback = (...args: readonly unknown[]) => Promise<void>;
 
@@ -77,6 +87,12 @@ export function registerCommands(
     services.profiles,
     services.speech,
   );
+  const assistLearning = new AssistLearning(
+    services.ai,
+    learningAssistanceParser,
+    services.editor,
+    services.userInterface,
+  );
   const selectAccessibilityProfile = new SelectAccessibilityProfile(
     new AccessibilityProfileCatalog(),
     services.configuration,
@@ -96,11 +112,24 @@ export function registerCommands(
     services.editor,
     services.userInterface,
   );
+  const accessibleSpeech = new AccessibleSpeechService(
+    services.speech,
+    services.profiles,
+    services.configuration,
+    services.userInterface,
+  );
+  const blindReader = new BlindContextReader(accessibleSpeech);
+  const copilot = new CopilotChatIntegration(accessibleSpeech);
+  const folders = new VoiceFolderController(accessibleSpeech, services.userInterface);
+  const audioCues = new AudioCueService();
+  const voiceHelp = new VoiceCommandHelp(accessibleSpeech);
   const voice = new VsCodeDictationController(
-    new VoiceIntentParser(),
-    new VoiceIntentExecutor(services.userInterface),
+    new VoiceIntentResolver(new VoiceIntentParser(), services.ai),
+    new VoiceIntentExecutor(blindReader, copilot, folders, accessibleSpeech, audioCues),
     services.userInterface,
     services.logger,
+    audioCues,
+    accessibleSpeech,
   );
   const speakSelection = new SpeakSelection(
     services.speech,
@@ -108,7 +137,9 @@ export function registerCommands(
     services.editor,
     services.userInterface,
   );
+  const focusTimer = new FocusTimerController(services.userInterface);
   context.subscriptions.push(voice);
+  context.subscriptions.push(focusTimer);
 
   const commands: ReadonlyArray<readonly [string, CommandCallback]> = [
     [
@@ -141,15 +172,45 @@ export function registerCommands(
       },
     ],
     [CommandIds.openFile, async (query) => openFile.execute(asOptionalString(query))],
+    [CommandIds.openFolder, async (name) => folders.open(asOptionalString(name))],
+    [CommandIds.openRecentFolder, async () => folders.openRecent()],
     [CommandIds.goToLine, async (line) => goToLine.execute(asOptionalLine(line))],
     [CommandIds.listDiagnostics, async () => diagnostics.execute()],
     [
+      CommandIds.nextDiagnostic,
+      async () => {
+        await vscode.commands.executeCommand('editor.action.marker.nextInFiles');
+      },
+    ],
+    [
+      CommandIds.previousDiagnostic,
+      async () => {
+        await vscode.commands.executeCommand('editor.action.marker.prevInFiles');
+      },
+    ],
+    [
       CommandIds.generateCode,
-      async (instruction) => generateCode.execute(asOptionalString(instruction)),
+      async (instruction, confirmationAlreadyGranted) =>
+        generateCode.execute(asOptionalString(instruction), confirmationAlreadyGranted === true),
     ],
     [CommandIds.explainSelection, async () => explainSelection.execute()],
+    [
+      CommandIds.explainCurrentFunction,
+      async () => {
+        if (await blindReader.selectCurrentSymbol()) await explainSelection.execute();
+      },
+    ],
+    [CommandIds.askCopilot, async (prompt) => copilot.send(asOptionalString(prompt) ?? '')],
+    [
+      CommandIds.askLearningQuestion,
+      async (question) => assistLearning.execute(asOptionalString(question)),
+    ],
     [CommandIds.explainDiagnostic, async () => explainDiagnostic.execute()],
-    [CommandIds.generateDocumentation, async () => generateDocumentation.execute()],
+    [
+      CommandIds.generateDocumentation,
+      async (confirmationAlreadyGranted) =>
+        generateDocumentation.execute(confirmationAlreadyGranted === true),
+    ],
     [CommandIds.summarizeFile, async () => generateCodeSummary.execute('file')],
     [CommandIds.summarizeFolder, async () => generateCodeSummary.execute('folder')],
     [CommandIds.summarizeWorkspace, async () => generateCodeSummary.execute('workspace')],
@@ -159,6 +220,17 @@ export function registerCommands(
       async (readAloud) => readCodeStructure.execute(readAloud === true),
     ],
     [CommandIds.checkAccessibility, async () => checkAccessibility.execute()],
+    [CommandIds.readSelectionContext, async () => blindReader.readSelection()],
+    [CommandIds.readSelectionDiagnostics, async () => blindReader.readSelectionDiagnostics()],
+    [CommandIds.readCurrentLine, async () => blindReader.readRelativeLine(0)],
+    [CommandIds.readCurrentDiagnostic, async () => blindReader.readCurrentDiagnostic()],
+    [CommandIds.readAllDiagnostics, async () => blindReader.readAllDiagnostics()],
+    [CommandIds.readNextDiagnostic, async () => blindReader.readNextDiagnostic()],
+    [CommandIds.readNextLine, async () => blindReader.readRelativeLine(1)],
+    [CommandIds.readPreviousLine, async () => blindReader.readRelativeLine(-1)],
+    [CommandIds.whereAmI, async () => blindReader.whereAmI()],
+    [CommandIds.listVoiceCommands, async () => voiceHelp.list(true)],
+    [CommandIds.nextVoiceCommands, async () => voiceHelp.list(false)],
     [
       CommandIds.clearAccessibilityFindings,
       async () => {
@@ -172,7 +244,15 @@ export function registerCommands(
     [CommandIds.voiceStartContinuous, async () => voice.startContinuous()],
     [CommandIds.voiceStopContinuous, async () => voice.stopContinuous()],
     [CommandIds.speakSelection, async () => speakSelection.execute()],
-    [CommandIds.stopSpeaking, async () => services.speech.stop()],
+    [CommandIds.stopSpeaking, async () => accessibleSpeech.stop()],
+    [CommandIds.pauseSpeech, async () => accessibleSpeech.pause()],
+    [CommandIds.resumeSpeech, async () => accessibleSpeech.resume()],
+    [CommandIds.repeatSpeech, async () => accessibleSpeech.repeat()],
+    [CommandIds.slowerSpeech, async () => accessibleSpeech.adjustRate('slower')],
+    [CommandIds.fasterSpeech, async () => accessibleSpeech.adjustRate('faster')],
+    [CommandIds.startFocusTimer, async () => focusTimer.start()],
+    [CommandIds.pauseFocusTimer, async () => focusTimer.pause()],
+    [CommandIds.resetFocusTimer, async () => focusTimer.reset()],
   ];
 
   for (const [id, callback] of commands) {

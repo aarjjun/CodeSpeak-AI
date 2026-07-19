@@ -13,7 +13,10 @@ export class GenerateCode {
     private readonly userInterface: UserInterfaceGateway,
   ) {}
 
-  public async execute(initialInstruction?: string): Promise<void> {
+  public async execute(
+    initialInstruction?: string,
+    confirmationAlreadyGranted = false,
+  ): Promise<void> {
     const document = await this.editor.getActiveDocument();
     const selection = await this.editor.getSelection();
     if (document === undefined || selection === undefined) {
@@ -66,9 +69,9 @@ export class GenerateCode {
       result.value.output.code,
       result.value.output.languageId,
     );
-    const confirmed = await this.userInterface.confirm(
-      `Insert the generated code into ${document.uri}?`,
-    );
+    const confirmed =
+      confirmationAlreadyGranted ||
+      (await this.userInterface.confirm(`Insert the generated code into ${document.uri}?`));
     if (!confirmed) {
       await this.userInterface.announce('Generated code was not inserted.');
       return;

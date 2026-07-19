@@ -32,6 +32,8 @@ describe('AI output parsers', () => {
     const result = codeExplanationParser.parse({
       summary: 'Summary',
       details: Array.from({ length: 13 }, (_, index) => `Detail ${index.toString()}`),
+      whyItWorks: 'The runtime evaluates the expression.',
+      alternatives: [],
       considerations: [],
     });
 

@@ -2,13 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { createDesktopSpeechProcess } from '../../../src/infrastructure/speech/desktop-speech-synthesizer';
 
 describe('desktop speech command factory', () => {
-  it('uses a fixed PowerShell program and passes settings as arguments', () => {
+  it('uses a fixed PowerShell program and passes settings through the child environment', () => {
     const process = createDesktopSpeechProcess('win32', { language: 'en-US', rate: 1.5 });
 
     expect(process.executable).toBe('powershell.exe');
     expect(process.arguments).toContain('-NoProfile');
-    expect(process.arguments).toContain('en-US');
-    expect(process.arguments.at(-2)).toBe('4');
+    expect(process.environment).toEqual({
+      CODESPEAK_SPEECH_RATE: '4',
+      CODESPEAK_SPEECH_LANGUAGE: 'en-US',
+      CODESPEAK_SPEECH_VOLUME: '100',
+      CODESPEAK_SPEECH_VOICE: '',
+    });
     expect(process.arguments.join(' ')).not.toContain('user supplied text');
   });
 
@@ -24,10 +28,10 @@ describe('desktop speech command factory', () => {
 
   it('clamps platform rate values', () => {
     expect(
-      createDesktopSpeechProcess('win32', { language: 'en-US', rate: 99 }).arguments.at(-2),
-    ).toBe('10');
+      createDesktopSpeechProcess('win32', { language: 'en-US', rate: 99 }).environment,
+    ).toMatchObject({ CODESPEAK_SPEECH_RATE: '10' });
     expect(
-      createDesktopSpeechProcess('linux', { language: 'en-US', rate: 99 }).arguments.at(-1),
-    ).toBe('100');
+      createDesktopSpeechProcess('linux', { language: 'en-US', rate: 99 }).arguments,
+    ).toContain('100');
   });
 });

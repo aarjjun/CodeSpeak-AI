@@ -31,15 +31,15 @@ export class SelectAccessibilityProfile {
   private description(profileId: AccessibilityProfileId): string {
     switch (profileId) {
       case 'blind':
-        return 'Screen-reader-first summaries and progress announcements.';
+        return 'Voice-first summaries, spoken progress, and screen-reader-oriented navigation.';
       case 'low-vision':
         return 'Clear visual presentation with optional spoken support.';
       case 'dyslexia':
-        return 'Shorter explanations with structured reading order.';
+        return 'Shorter explanations, structured reading order, and bracket highlighting.';
       case 'motor':
         return 'Stronger confirmation and reduced precision requirements.';
       case 'adhd':
-        return 'Brief grouped information with reduced distraction.';
+        return 'Brief grouped information, reduced distraction, and active-line focus highlighting.';
       case 'custom':
         return 'Neutral defaults controlled by individual settings.';
     }

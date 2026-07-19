@@ -48,7 +48,10 @@
       "supported": true
     }
   },
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished",
+    "onView:codespeak.dashboard"
+  ],
   "contributes": {
     "commands": [
       {
@@ -67,6 +70,16 @@
         "category": "CodeSpeak AI"
       },
       {
+        "command": "codespeak.openFolder",
+        "title": "Open Folder by Voice",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.openRecentFolder",
+        "title": "Open Recent Folder",
+        "category": "CodeSpeak AI"
+      },
+      {
         "command": "codespeak.goToLine",
         "title": "Go to Line",
         "category": "CodeSpeak AI"
@@ -74,6 +87,16 @@
       {
         "command": "codespeak.listDiagnostics",
         "title": "Navigate Workspace Diagnostics",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.nextDiagnostic",
+        "title": "Go to Next Diagnostic",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.previousDiagnostic",
+        "title": "Go to Previous Diagnostic",
         "category": "CodeSpeak AI"
       },
       {
@@ -94,6 +117,11 @@
       {
         "command": "codespeak.explainSelection",
         "title": "Explain Selected Code",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.askLearningQuestion",
+        "title": "Ask a Learning Question",
         "category": "CodeSpeak AI"
       },
       {
@@ -129,6 +157,71 @@
       {
         "command": "codespeak.readCodeStructure",
         "title": "Read Code Structure",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.readSelectionContext",
+        "title": "Read Selected Code with Context",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.readSelectionDiagnostics",
+        "title": "Find Errors in Selection",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.explainCurrentFunction",
+        "title": "Explain Current Function",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.readCurrentLine",
+        "title": "Read Current Line",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.readCurrentDiagnostic",
+        "title": "Read Current Diagnostic",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.readAllDiagnostics",
+        "title": "Read All Diagnostics",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.readNextDiagnostic",
+        "title": "Read Next Diagnostic",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.readNextLine",
+        "title": "Read Next Line",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.readPreviousLine",
+        "title": "Read Previous Line",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.whereAmI",
+        "title": "Where Am I",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.copilot.ask",
+        "title": "Ask GitHub Copilot Chat",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.voice.listCommands",
+        "title": "List Voice Commands",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.voice.nextCommands",
+        "title": "Read Next Voice Command Group",
         "category": "CodeSpeak AI"
       },
       {
@@ -168,22 +261,71 @@
         "command": "codespeak.speech.stop",
         "title": "Stop Reading Aloud",
         "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.speech.pause",
+        "title": "Pause Reading Aloud",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.speech.resume",
+        "title": "Resume Reading Aloud",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.speech.repeat",
+        "title": "Repeat Last Spoken Message",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.speech.slower",
+        "title": "Speak Slower",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.speech.faster",
+        "title": "Speak Faster",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.focus.startTimer",
+        "title": "Start Focus Timer",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.focus.pauseTimer",
+        "title": "Pause Focus Timer",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.focus.resetTimer",
+        "title": "Reset Focus Timer",
+        "category": "CodeSpeak AI"
       }
     ],
     "keybindings": [
       {
         "command": "codespeak.voice.toggle",
-        "key": "ctrl+alt+v",
-        "mac": "cmd+alt+v",
+        "key": "ctrl+alt+space",
+        "mac": "cmd+alt+space",
         "when": "editorTextFocus && !codespeak.voiceListening"
       },
       {
         "command": "codespeak.voice.toggle",
-        "key": "ctrl+alt+v",
-        "mac": "cmd+alt+v",
+        "key": "ctrl+alt+space",
+        "mac": "cmd+alt+space",
         "when": "codespeak.voiceListening"
       }
     ],
+    "views": {
+      "explorer": [
+        {
+          "id": "codespeak.dashboard",
+          "name": "CodeSpeak AI",
+          "when": "true"
+        }
+      ]
+    },
     "configuration": {
       "title": "CodeSpeak AI",
       "properties": {
@@ -203,6 +345,68 @@
           "minimum": 0.5,
           "maximum": 2,
           "description": "Speech synthesis rate."
+        },
+        "codespeak.voice.volume": {
+          "type": "number",
+          "default": 100,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Speech output volume from zero to one hundred."
+        },
+        "codespeak.voice.name": {
+          "type": "string",
+          "default": "",
+          "description": "Optional operating-system speech voice name."
+        },
+        "codespeak.voice.activationMode": {
+          "type": "string",
+          "enum": [
+            "toggle",
+            "continuous"
+          ],
+          "enumDescriptions": [
+            "One shortcut press starts listening and another stops it.",
+            "Listening restarts after every processed utterance until explicitly stopped."
+          ],
+          "default": "toggle",
+          "description": "Default voice listening mode."
+        },
+        "codespeak.voice.silenceTimeoutSeconds": {
+          "type": "number",
+          "default": 8,
+          "minimum": 2,
+          "maximum": 60,
+          "description": "Seconds of silence before the current utterance is processed."
+        },
+        "codespeak.voice.continuousListening": {
+          "type": "boolean",
+          "default": false,
+          "description": "Restart voice listening after each processed utterance."
+        },
+        "codespeak.voice.confirmBeforeDestructiveActions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Require spoken confirmation before potentially destructive voice actions."
+        },
+        "codespeak.voice.audioCues": {
+          "type": "boolean",
+          "default": true,
+          "description": "Play optional non-verbal audio cues for voice state and command results."
+        },
+        "codespeak.blindMode.confirmWorkspaceChanges": {
+          "type": "boolean",
+          "default": true,
+          "description": "Confirm before a voice command changes the current workspace."
+        },
+        "codespeak.privacy.includeSelectionInAiRequests": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow explicitly requested AI and Copilot actions to include selected code."
+        },
+        "codespeak.privacy.storeVoiceTranscripts": {
+          "type": "boolean",
+          "default": false,
+          "description": "Reserved privacy control. CodeSpeak does not store transcripts in this release."
         },
         "codespeak.accessibilityProfile": {
           "type": "string",

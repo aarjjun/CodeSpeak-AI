@@ -27,15 +27,31 @@ export class ExplainDiagnostic {
       return;
     }
 
-    const selectedId = await this.userInterface.choose(
-      'Choose a diagnostic to explain',
-      available.slice(0, 100).map((diagnostic) => ({
-        id: diagnostic.id,
-        label: `${diagnostic.severity}: ${diagnostic.message}`,
-        description: this.locationLabel(diagnostic),
-      })),
-    );
-    const diagnostic = available.find((item) => item.id === selectedId);
+    const selection = await this.editor.getSelection();
+    const currentLine = selection?.range.start.line;
+    const currentDiagnostics =
+      currentLine === undefined
+        ? []
+        : available.filter((item) => {
+            const range = item.location.range;
+            return (
+              range !== undefined &&
+              range.start.line <= currentLine &&
+              range.end.line >= currentLine
+            );
+          });
+    let diagnostic = currentDiagnostics.length === 1 ? currentDiagnostics[0] : undefined;
+    if (diagnostic === undefined) {
+      const selectedId = await this.userInterface.choose(
+        'Choose a diagnostic to explain',
+        available.slice(0, 100).map((candidate) => ({
+          id: candidate.id,
+          label: `${candidate.severity}: ${candidate.message}`,
+          description: this.locationLabel(candidate),
+        })),
+      );
+      diagnostic = available.find((item) => item.id === selectedId);
+    }
     if (diagnostic === undefined) {
       return;
     }

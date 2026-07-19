@@ -79,6 +79,8 @@ export class TypeScriptAccessibilityAnalyzer implements AccessibilityAnalyzer {
             'jsx-interactive-focus',
             'jsx-form-label',
             'jsx-role-name',
+            'jsx-anchor-name',
+            'jsx-positive-tabindex',
           ],
         },
       });
@@ -201,6 +203,40 @@ export class TypeScriptAccessibilityAnalyzer implements AccessibilityAnalyzer {
         ),
       );
     }
+
+    if (
+      tagName === 'a' &&
+      attributes.has('href') &&
+      !attributes.has('aria-label') &&
+      !attributes.has('aria-labelledby') &&
+      !this.hasVisibleText(node)
+    ) {
+      issues.push(
+        this.issue(
+          'jsx-anchor-name',
+          'aria',
+          'serious',
+          'Link has no determinable accessible name.',
+          'Add descriptive link text, aria-label, or aria-labelledby.',
+          range,
+          'https://www.w3.org/WAI/WCAG22/Understanding/link-purpose-in-context.html',
+        ),
+      );
+    }
+
+    if (this.hasPositiveTabIndex(node, sourceFile)) {
+      issues.push(
+        this.issue(
+          'jsx-positive-tabindex',
+          'focus-management',
+          'moderate',
+          'Positive tabIndex can create an unexpected keyboard focus order.',
+          'Use native document order or tabIndex={0} when an element must be focusable.',
+          range,
+          'https://www.w3.org/WAI/WCAG22/Understanding/focus-order.html',
+        ),
+      );
+    }
   }
 
   private collectLabelledControlIds(sourceFile: ts.SourceFile): ReadonlySet<string> {
@@ -277,6 +313,28 @@ export class TypeScriptAccessibilityAnalyzer implements AccessibilityAnalyzer {
 
   private isHiddenInput(tagName: string, attributes: ReadonlyMap<string, string>): boolean {
     return tagName === 'input' && attributes.get('type')?.toLowerCase() === 'hidden';
+  }
+
+  private hasPositiveTabIndex(node: ts.JsxOpeningLikeElement, sourceFile: ts.SourceFile): boolean {
+    for (const property of node.attributes.properties) {
+      if (
+        !ts.isJsxAttribute(property) ||
+        property.name.getText(sourceFile).toLowerCase() !== 'tabindex'
+      ) {
+        continue;
+      }
+      const initializer = property.initializer;
+      if (initializer === undefined) {
+        return false;
+      }
+      const source = initializer
+        .getText(sourceFile)
+        .replace(/[{}"']/gu, '')
+        .trim();
+      const value = Number(source);
+      return Number.isFinite(value) && value > 0;
+    }
+    return false;
   }
 
   private issue(

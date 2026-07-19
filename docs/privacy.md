@@ -41,3 +41,5 @@ CodeSpeak does not send the entire workspace for the implemented `0.2.0` workflo
 ## Third parties
 
 Users are responsible for reviewing the Google Gemini and Microsoft VS Code Speech terms and privacy policies applicable to their installation and account.
+
+GitHub Copilot voice requests are routed to the installed Copilot Chat experience. They are not sent to Gemini. CodeSpeak opens a contextual draft where the current VS Code command supports it and requires the user to review and submit the request in Chat.

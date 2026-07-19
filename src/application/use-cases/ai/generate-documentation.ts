@@ -24,7 +24,7 @@ export class GenerateDocumentation {
     private readonly userInterface: UserInterfaceGateway,
   ) {}
 
-  public async execute(): Promise<void> {
+  public async execute(confirmationAlreadyGranted = false): Promise<void> {
     const document = await this.editor.getActiveDocument();
     const selection = await this.editor.getSelection();
     if (document === undefined || selection === undefined || selection.text.trim().length === 0) {
@@ -65,12 +65,16 @@ export class GenerateDocumentation {
     const generated = result.value.output;
     await this.editor.showPreview(
       'CodeSpeak generated documentation',
-      generated.documentation,
-      document.languageId,
+      generated.usageExample === undefined
+        ? generated.documentation
+        : `${generated.documentation}\n\nUsage example:\n${generated.usageExample}`,
+      'markdown',
     );
-    const confirmed = await this.userInterface.confirm(
-      `Insert the generated ${generated.style} before the selected code?`,
-    );
+    const confirmed =
+      confirmationAlreadyGranted ||
+      (await this.userInterface.confirm(
+        `Insert the generated ${generated.style} before the selected code?`,
+      ));
     if (!confirmed) {
       await this.userInterface.announce('Generated documentation was not inserted.');
       return;

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { CommandIds } from '../../src/presentation/commands/command-ids';
+import { CODE_SPEAK_COMMANDS } from '../../src/presentation/commands/command-registry';
 
 interface CommandContribution {
   readonly command: string;
@@ -47,6 +48,11 @@ describe('accessible extension manifest', () => {
       expect(command.title.trim(), command.command).not.toBe('');
       expect(command.category, command.command).toBe('CodeSpeak AI');
     }
+  });
+
+  it('keeps the voice registry synchronized with every Command Palette action', () => {
+    const voiceCommands = new Set(CODE_SPEAK_COMMANDS.map((item) => item.id));
+    expect([...Object.values(CommandIds)].sort()).toEqual([...voiceCommands].sort());
   });
 
   it('provides keyboard start and stop paths for voice input on Windows, Linux, and macOS', () => {

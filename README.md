@@ -23,6 +23,7 @@ It is not an autonomous coding agent and it does not silently edit files. AI out
 - Check JSX and TSX for missing alternative text, labels, keyboard handlers, focusability, and accessible names.
 - Apply accessibility profiles for blind, low-vision, dyslexia, motor-accessibility, and ADHD workflows.
 - Accept allowlisted voice commands using local VS Code Speech transcription.
+- Resolve spoken input as commands, navigation, Copilot requests, code actions, reading, or explicit dictation in Blind Mode.
 - Read selected text and structural summaries aloud through desktop speech services.
 
 ## Requirements
@@ -40,7 +41,7 @@ It is not an autonomous coding agent and it does not silently edit files. AI out
 4. Run **CodeSpeak AI: Select Accessibility Profile**.
 5. Open a source file and try **Read Code Structure**, **Explain Selected Code**, or **Generate Code**.
 
-For voice input, install VS Code Speech and press `Ctrl+Alt+V` on Windows/Linux or `Cmd+Alt+V` on macOS. Press the shortcut again to stop listening and process the transcript.
+For voice input, install VS Code Speech and press `Ctrl+Alt+Space` on Windows/Linux or `Cmd+Alt+Space` on macOS. Press the shortcut again to stop listening and process the transcript. The shortcut is configurable through VS Code Keyboard Shortcuts.
 
 ## Commands
 
@@ -70,14 +71,24 @@ All commands are available through the keyboard-accessible Command Palette. Voic
 
 ## Settings
 
-| Setting                          | Default            | Description                                                                                 |
-| -------------------------------- | ------------------ | ------------------------------------------------------------------------------------------- |
-| `codespeak.model`                | `gemini-3.5-flash` | Gemini model used for AI operations.                                                        |
-| `codespeak.voice.language`       | `en-US`            | BCP 47 language for speech output.                                                          |
-| `codespeak.voice.rate`           | `1`                | Speech rate from `0.5` to `2`.                                                              |
-| `codespeak.accessibilityProfile` | `custom`           | Active accessibility profile.                                                               |
-| `codespeak.autoExplainErrors`    | `false`            | Announces newly available workspace errors and directs the user to the explanation command. |
-| `codespeak.autoReadSummaries`    | `false`            | Reads generated summaries when speech is enabled.                                           |
+| Setting                                           | Default            | Description                                                                                 |
+| ------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------- |
+| `codespeak.model`                                 | `gemini-3.5-flash` | Gemini model used for AI operations.                                                        |
+| `codespeak.voice.language`                        | `en-US`            | BCP 47 language for speech output.                                                          |
+| `codespeak.voice.rate`                            | `1`                | Speech rate from `0.5` to `2`.                                                              |
+| `codespeak.voice.volume`                          | `100`              | Speech output volume from zero to one hundred.                                              |
+| `codespeak.voice.name`                            | empty              | Preferred operating system voice name.                                                      |
+| `codespeak.voice.activationMode`                  | `toggle`           | Starts one toggle session or continuous listening.                                          |
+| `codespeak.voice.silenceTimeoutSeconds`           | `8`                | Stops a toggle session after this many seconds of silence.                                  |
+| `codespeak.voice.continuousListening`             | `false`            | Restarts listening after each recognized continuous utterance.                              |
+| `codespeak.voice.confirmBeforeDestructiveActions` | `true`             | Requires confirmation before voice initiated changes.                                       |
+| `codespeak.voice.audioCues`                       | `true`             | Enables optional nonverbal voice state cues.                                                |
+| `codespeak.blindMode.confirmWorkspaceChanges`     | `true`             | Confirms before a voice request replaces the workspace.                                     |
+| `codespeak.privacy.includeSelectionInAiRequests`  | `true`             | Allows selected code in contextual Copilot prompts.                                         |
+| `codespeak.privacy.storeVoiceTranscripts`         | `false`            | Reserved privacy control. Transcripts are not stored in this release.                       |
+| `codespeak.accessibilityProfile`                  | `custom`           | Active accessibility profile.                                                               |
+| `codespeak.autoExplainErrors`                     | `false`            | Announces newly available workspace errors and directs the user to the explanation command. |
+| `codespeak.autoReadSummaries`                     | `false`            | Reads generated summaries when speech is enabled.                                           |
 
 Voice recognition language is controlled by the VS Code Speech setting `accessibility.voice.speechLanguage`.
 
@@ -127,6 +138,7 @@ npm run package
 The integration suite downloads and launches the minimum supported VS Code version in an isolated Extension Host.
 
 Architecture documentation is available in `docs/architecture.md`. Public extension contracts are described in `docs/api.md`.
+Blind Mode commands, privacy boundaries, and limitations are described in `docs/blind-mode.md`.
 
 ## Roadmap
 

@@ -6,6 +6,8 @@ export interface CodeSpeakConfiguration {
   readonly voiceLanguageConfigured: boolean;
   readonly voiceRate: number;
   readonly voiceRateConfigured: boolean;
+  readonly voiceVolume?: number;
+  readonly voiceName?: string;
   readonly accessibilityProfile: AccessibilityProfileId;
   readonly autoExplainErrors: boolean;
   readonly autoReadSummaries: boolean;
