@@ -1,0 +1,7 @@
+dist
+dist-test
+.vscode-test
+coverage
+node_modules
+*.vsix
+LICENSE.txt

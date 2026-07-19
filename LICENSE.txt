@@ -1,0 +1,9 @@
+CodeSpeak AI Proprietary License
+
+Copyright (c) 2026 CodeSpeak AI. All rights reserved.
+
+This software and its source code are proprietary and confidential. No permission is granted to copy, modify, distribute, sublicense, publish, or use this software except under a separate written agreement from the copyright holder.
+
+Installing an officially distributed build grants the recipient a limited, revocable, non-exclusive, non-transferable right to use the software for its intended purpose. This license does not grant rights to the Gemini API, Visual Studio Code, VS Code Speech, or any other third-party service or component.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.

@@ -1,0 +1,36 @@
+name: Build release candidate
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  vsix:
+    name: Verify and package VSIX
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Verify tag and manifest versions
+        run: node scripts/verify-release-version.mjs
+      - name: Run release gates and package
+        run: npm run release:check
+      - name: Upload verified VSIX
+        uses: actions/upload-artifact@v7
+        with:
+          name: codespeak-ai-vsix
+          path: '*.vsix'
+          if-no-files-found: error
+          retention-days: 30

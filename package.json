@@ -1,0 +1,272 @@
+{
+  "name": "codespeak-ai",
+  "displayName": "CodeSpeak AI",
+  "description": "The AI-powered accessibility assistant for developers.",
+  "version": "0.2.0",
+  "private": true,
+  "publisher": "codespeak-ai",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "preview": true,
+  "pricing": "Free",
+  "icon": "resources/codespeak-icon.png",
+  "galleryBanner": {
+    "color": "#080b59",
+    "theme": "dark"
+  },
+  "keywords": [
+    "accessibility",
+    "screen reader",
+    "voice coding",
+    "blind developers",
+    "low vision",
+    "motor accessibility",
+    "dyslexia",
+    "ADHD",
+    "Gemini",
+    "code explanation",
+    "WCAG",
+    "AST"
+  ],
+  "engines": {
+    "vscode": "^1.98.0"
+  },
+  "categories": [
+    "Education",
+    "Machine Learning",
+    "Programming Languages",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "extensionKind": [
+    "ui"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": {
+      "supported": true
+    }
+  },
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      {
+        "command": "codespeak.setApiKey",
+        "title": "Set Gemini API Key",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.clearApiKey",
+        "title": "Clear Gemini API Key",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.openFile",
+        "title": "Open Workspace File",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.goToLine",
+        "title": "Go to Line",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.listDiagnostics",
+        "title": "Navigate Workspace Diagnostics",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.undo",
+        "title": "Undo",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.redo",
+        "title": "Redo",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.generateCode",
+        "title": "Generate Code",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.explainSelection",
+        "title": "Explain Selected Code",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.explainDiagnostic",
+        "title": "Explain Diagnostic",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.generateDocumentation",
+        "title": "Generate Documentation for Selection",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.summarizeFile",
+        "title": "Summarize Current File",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.summarizeFolder",
+        "title": "Summarize Current Folder",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.summarizeWorkspace",
+        "title": "Summarize Workspace",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.selectAccessibilityProfile",
+        "title": "Select Accessibility Profile",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.readCodeStructure",
+        "title": "Read Code Structure",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.checkAccessibility",
+        "title": "Check Current File Accessibility",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.clearAccessibilityFindings",
+        "title": "Clear Accessibility Findings",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.voice.toggle",
+        "title": "Start or Stop Voice Command",
+        "category": "CodeSpeak AI",
+        "enablement": "!codespeak.voiceProcessing"
+      },
+      {
+        "command": "codespeak.voice.startContinuous",
+        "title": "Start Continuous Voice Mode",
+        "category": "CodeSpeak AI",
+        "enablement": "!codespeak.voiceListening"
+      },
+      {
+        "command": "codespeak.voice.stopContinuous",
+        "title": "Stop Continuous Voice Mode",
+        "category": "CodeSpeak AI",
+        "enablement": "codespeak.voiceListening"
+      },
+      {
+        "command": "codespeak.speech.speakSelection",
+        "title": "Read Selection Aloud",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.speech.stop",
+        "title": "Stop Reading Aloud",
+        "category": "CodeSpeak AI"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "codespeak.voice.toggle",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
+        "when": "editorTextFocus && !codespeak.voiceListening"
+      },
+      {
+        "command": "codespeak.voice.toggle",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
+        "when": "codespeak.voiceListening"
+      }
+    ],
+    "configuration": {
+      "title": "CodeSpeak AI",
+      "properties": {
+        "codespeak.model": {
+          "type": "string",
+          "default": "gemini-3.5-flash",
+          "description": "Gemini model used for AI-assisted operations."
+        },
+        "codespeak.voice.language": {
+          "type": "string",
+          "default": "en-US",
+          "description": "BCP 47 language tag used for speech output. Voice input follows the VS Code Speech language setting."
+        },
+        "codespeak.voice.rate": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0.5,
+          "maximum": 2,
+          "description": "Speech synthesis rate."
+        },
+        "codespeak.accessibilityProfile": {
+          "type": "string",
+          "enum": [
+            "blind",
+            "low-vision",
+            "dyslexia",
+            "motor",
+            "adhd",
+            "custom"
+          ],
+          "enumDescriptions": [
+            "Screen-reader-centered interaction and concise structural narration.",
+            "High-clarity visual presentation with optional spoken support.",
+            "Reduced reading complexity and structured explanations.",
+            "Reduced interaction precision and stronger confirmation support.",
+            "Reduced distraction and shorter, grouped information.",
+            "User-defined accessibility behavior."
+          ],
+          "default": "custom",
+          "description": "Default accessibility behavior profile."
+        },
+        "codespeak.autoExplainErrors": {
+          "type": "boolean",
+          "default": false,
+          "description": "Offer accessible explanations when new diagnostics appear."
+        },
+        "codespeak.autoReadSummaries": {
+          "type": "boolean",
+          "default": false,
+          "description": "Read generated summaries aloud when speech is enabled."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "npm run check-types && tsc -p tsconfig.build.json",
+    "watch": "tsc -p tsconfig.build.json --watch",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:integration:compile": "npm run build && tsc -p tsconfig.integration.json",
+    "test:integration": "npm run test:integration:compile && node scripts/run-integration-tests.mjs",
+    "test:all": "npm run test && npm run test:integration",
+    "test:coverage": "node scripts/run-coverage.mjs",
+    "verify": "npm audit --audit-level=high && npm run check-types && npm run lint && npm run format:check && npm run test:coverage",
+    "package": "vsce package --allow-missing-repository",
+    "release:check": "npm run verify && npm run test:integration && npm run package"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.1.1",
+    "@types/vscode": "1.98.0",
+    "@vitest/coverage-v8": "4.1.10",
+    "@vscode/test-electron": "3.0.0",
+    "@vscode/vsce": "3.9.2",
+    "eslint": "10.7.0",
+    "prettier": "3.9.5",
+    "typescript-eslint": "8.64.0",
+    "vitest": "4.1.10"
+  },
+  "dependencies": {
+    "typescript": "^5.9.3"
+  }
+}
