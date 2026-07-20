@@ -65,6 +65,11 @@ export class CodeSpeakDashboardProvider
         description: 'Use local VS Code Speech transcription',
         command: 'codespeak.voice.toggle',
       },
+      {
+        label: 'Test voice without microphone',
+        description: 'Type a phrase and run the same Blind Mode voice pipeline',
+        command: 'codespeak.voice.simulate',
+      },
     ];
   }
 

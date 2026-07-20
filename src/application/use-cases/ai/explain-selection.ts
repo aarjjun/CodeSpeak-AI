@@ -4,6 +4,7 @@ import type { UserInterfaceGateway } from '../../ports/platform/user-interface-g
 import type { AiOutputParser, AiRequest } from '../../../domain/ai/ai-contracts';
 import type { CodeExplanationResult } from '../../../domain/ai/ai-results';
 import { reportAiError } from './report-ai-error';
+import type { SpokenFeedback } from '../../ports/speech/spoken-feedback';
 
 export class ExplainSelection {
   public constructor(
@@ -11,6 +12,7 @@ export class ExplainSelection {
     private readonly outputParser: AiOutputParser<CodeExplanationResult>,
     private readonly editor: EditorGateway,
     private readonly userInterface: UserInterfaceGateway,
+    private readonly spokenFeedback?: SpokenFeedback,
   ) {}
 
   public async execute(): Promise<void> {
@@ -41,7 +43,7 @@ export class ExplainSelection {
       (signal) => this.ai.generate(request, this.outputParser, signal),
     );
     if (!result.ok) {
-      await reportAiError(result.error, this.userInterface);
+      await reportAiError(result.error, this.userInterface, this.spokenFeedback);
       return;
     }
 
@@ -64,7 +66,8 @@ export class ExplainSelection {
         : ['', '## Considerations', ...explanation.considerations.map((item) => `- ${item}`)]),
     ].join('\n');
     await this.editor.showPreview('CodeSpeak explanation', content, 'markdown');
-    await this.userInterface.announce(explanation.summary);
+    if (this.spokenFeedback === undefined) await this.userInterface.announce(explanation.summary);
+    else await this.spokenFeedback.speak(explanation.summary);
   }
 
   private selectionOrCurrentLine(

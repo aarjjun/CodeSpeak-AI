@@ -34,6 +34,19 @@ describe('VoiceIntentResolver', () => {
     expect(ai.generateCall).not.toHaveBeenCalled();
   });
 
+  it('recognizes CodeSpeak when speech recognition returns it as one word', async () => {
+    const ai = new ClassificationAi({ category: 'dictation', content: 'wrong' });
+    const resolver = new VoiceIntentResolver(new VoiceIntentParser(), ai);
+
+    const intent = await resolver.resolve('list CodeSpeak commands');
+
+    expect(intent).toMatchObject({
+      name: 'codespeak-command',
+      parameters: { commandId: 'codespeak.voice.listCommands' },
+    });
+    expect(ai.generateCall).not.toHaveBeenCalled();
+  });
+
   it('uses AI classification only after deterministic matching fails', async () => {
     const ai = new ClassificationAi({ category: 'dictation', content: 'Hello world' });
     const resolver = new VoiceIntentResolver(new VoiceIntentParser(), ai);

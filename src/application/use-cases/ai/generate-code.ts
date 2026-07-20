@@ -4,6 +4,7 @@ import type { UserInterfaceGateway } from '../../ports/platform/user-interface-g
 import type { AiOutputParser, AiRequest } from '../../../domain/ai/ai-contracts';
 import type { GeneratedCodeResult } from '../../../domain/ai/ai-results';
 import { reportAiError } from './report-ai-error';
+import type { SpokenFeedback } from '../../ports/speech/spoken-feedback';
 
 export class GenerateCode {
   public constructor(
@@ -11,6 +12,7 @@ export class GenerateCode {
     private readonly outputParser: AiOutputParser<GeneratedCodeResult>,
     private readonly editor: EditorGateway,
     private readonly userInterface: UserInterfaceGateway,
+    private readonly spokenFeedback?: SpokenFeedback,
   ) {}
 
   public async execute(
@@ -60,7 +62,7 @@ export class GenerateCode {
       this.ai.generate(request, this.outputParser, signal),
     );
     if (!result.ok) {
-      await reportAiError(result.error, this.userInterface);
+      await reportAiError(result.error, this.userInterface, this.spokenFeedback);
       return;
     }
 
@@ -69,11 +71,16 @@ export class GenerateCode {
       result.value.output.code,
       result.value.output.languageId,
     );
+    if (this.spokenFeedback !== undefined) {
+      await this.spokenFeedback.speak(result.value.output.explanation);
+    }
     const confirmed =
       confirmationAlreadyGranted ||
       (await this.userInterface.confirm(`Insert the generated code into ${document.uri}?`));
     if (!confirmed) {
-      await this.userInterface.announce('Generated code was not inserted.');
+      if (this.spokenFeedback === undefined)
+        await this.userInterface.announce('Generated code was not inserted.');
+      else await this.spokenFeedback.speak('Generated code was not inserted.');
       return;
     }
 
@@ -86,6 +93,8 @@ export class GenerateCode {
       await this.userInterface.showError('CodeSpeak could not apply the generated code.');
       return;
     }
-    await this.userInterface.announce('Generated code inserted.');
+    if (this.spokenFeedback === undefined)
+      await this.userInterface.announce('Generated code inserted.');
+    else await this.spokenFeedback.speak('Generated code inserted.');
   }
 }

@@ -449,6 +449,15 @@ export const CODE_SPEAK_COMMANDS: readonly CodeSpeakCommandDefinition[] = [
     true,
   ),
   definition(
+    CommandIds.voiceSimulate,
+    'Enter voice command as text',
+    ['simulate voice command', 'test voice command'],
+    'Run the exact Blind Mode voice pipeline without using a microphone.',
+    false,
+    false,
+    true,
+  ),
+  definition(
     CommandIds.voiceToggle,
     'Toggle voice mode',
     ['toggle voice mode', 'start voice mode'],
@@ -497,5 +506,6 @@ export function normalizeVoiceText(value: string): string {
     .trim()
     .toLocaleLowerCase()
     .replace(/[.,!?]/gu, '')
+    .replace(/\bcodespeak\b/gu, 'code speak')
     .replace(/\s+/gu, ' ');
 }

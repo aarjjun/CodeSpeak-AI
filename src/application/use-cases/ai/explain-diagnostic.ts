@@ -6,6 +6,7 @@ import type { AiOutputParser, AiRequest } from '../../../domain/ai/ai-contracts'
 import type { DiagnosticExplanationResult } from '../../../domain/ai/ai-results';
 import type { CodeDiagnostic } from '../../../domain/diagnostics/diagnostic-contracts';
 import { reportAiError } from './report-ai-error';
+import type { SpokenFeedback } from '../../ports/speech/spoken-feedback';
 
 export class ExplainDiagnostic {
   public constructor(
@@ -14,6 +15,7 @@ export class ExplainDiagnostic {
     private readonly diagnostics: DiagnosticsGateway,
     private readonly editor: EditorGateway,
     private readonly userInterface: UserInterfaceGateway,
+    private readonly spokenFeedback?: SpokenFeedback,
   ) {}
 
   public async execute(): Promise<void> {
@@ -78,7 +80,7 @@ export class ExplainDiagnostic {
       (signal) => this.ai.generate(request, this.outputParser, signal),
     );
     if (!result.ok) {
-      await reportAiError(result.error, this.userInterface);
+      await reportAiError(result.error, this.userInterface, this.spokenFeedback);
       return;
     }
 
@@ -95,7 +97,9 @@ export class ExplainDiagnostic {
       ...explanation.suggestedNextSteps.map((step) => `- ${step}`),
     ].join('\n');
     await this.editor.showPreview('CodeSpeak diagnostic explanation', content, 'markdown');
-    await this.userInterface.announce(explanation.plainLanguageExplanation);
+    if (this.spokenFeedback === undefined)
+      await this.userInterface.announce(explanation.plainLanguageExplanation);
+    else await this.spokenFeedback.speak(explanation.plainLanguageExplanation);
   }
 
   private locationLabel(diagnostic: CodeDiagnostic): string {

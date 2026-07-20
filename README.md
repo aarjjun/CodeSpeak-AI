@@ -24,6 +24,7 @@ It is not an autonomous coding agent and it does not silently edit files. AI out
 - Apply accessibility profiles for blind, low-vision, dyslexia, motor-accessibility, and ADHD workflows.
 - Accept allowlisted voice commands using local VS Code Speech transcription.
 - Resolve spoken input as commands, navigation, Copilot requests, code actions, reading, or explicit dictation in Blind Mode.
+- Route explicit Gemini requests through the configured API and speak the response in Blind Mode.
 - Read selected text and structural summaries aloud through desktop speech services.
 
 ## Requirements
@@ -42,6 +43,8 @@ It is not an autonomous coding agent and it does not silently edit files. AI out
 5. Open a source file and try **Read Code Structure**, **Explain Selected Code**, or **Generate Code**.
 
 For voice input, install VS Code Speech and press `Ctrl+Alt+Space` on Windows/Linux or `Cmd+Alt+Space` on macOS. Press the shortcut again to stop listening and process the transcript. The shortcut is configurable through VS Code Keyboard Shortcuts.
+
+To test the complete Blind Mode command pipeline without a microphone, run **CodeSpeak AI: Enter Voice Command as Text** and enter the phrase you want to simulate.
 
 ## Commands
 
@@ -79,7 +82,7 @@ All commands are available through the keyboard-accessible Command Palette. Voic
 | `codespeak.voice.volume`                          | `100`              | Speech output volume from zero to one hundred.                                              |
 | `codespeak.voice.name`                            | empty              | Preferred operating system voice name.                                                      |
 | `codespeak.voice.activationMode`                  | `toggle`           | Starts one toggle session or continuous listening.                                          |
-| `codespeak.voice.silenceTimeoutSeconds`           | `8`                | Stops a toggle session after this many seconds of silence.                                  |
+| `codespeak.voice.silenceTimeoutSeconds`           | `3`                | Stops a toggle session after this many seconds of silence.                                  |
 | `codespeak.voice.continuousListening`             | `false`            | Restarts listening after each recognized continuous utterance.                              |
 | `codespeak.voice.confirmBeforeDestructiveActions` | `true`             | Requires confirmation before voice initiated changes.                                       |
 | `codespeak.voice.audioCues`                       | `true`             | Enables optional nonverbal voice state cues.                                                |

@@ -103,6 +103,24 @@ export class VoiceIntentParser {
       return this.intent('copilot-chat', { prompt: '' });
     }
 
+    const gemini = normalized.match(/^(?:ask|tell) gemini(?: to)? (.+)$/u);
+    if (gemini?.[1] !== undefined) {
+      return this.intent('gemini-chat', { prompt: gemini[1] });
+    }
+    const sendToGemini = normalized.match(/^send (.+) to gemini$/u);
+    if (sendToGemini?.[1] !== undefined) {
+      return this.intent('gemini-chat', { prompt: sendToGemini[1] });
+    }
+    const useGemini = normalized.match(/^use gemini to (.+)$/u);
+    if (useGemini?.[1] !== undefined) {
+      return this.intent('gemini-chat', { prompt: useGemini[1] });
+    }
+    if (normalized === 'ask gemini' || normalized === 'open gemini') {
+      return this.intent('codespeak-command', {
+        commandId: 'codespeak.learning.askQuestion',
+      });
+    }
+
     const commonNamedFolder = normalized.match(/^open the (.+) folder$/u);
     if (commonNamedFolder?.[1] !== undefined) {
       return this.intent('open-folder', { name: commonNamedFolder[1] }, true);

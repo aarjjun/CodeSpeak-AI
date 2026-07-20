@@ -8,6 +8,7 @@ import type { AiContextItem, AiOutputParser, AiRequest } from '../../../domain/a
 import type { CodeSummaryResult, CodeSummaryScope } from '../../../domain/ai/ai-results';
 import type { WorkspaceDocument } from '../../../domain/workspace/workspace-contracts';
 import { reportAiError } from './report-ai-error';
+import type { SpokenFeedback } from '../../ports/speech/spoken-feedback';
 
 const MAXIMUM_FILES = 12;
 const MAXIMUM_CHARACTERS_PER_FILE = 5_000;
@@ -26,6 +27,7 @@ export class GenerateCodeSummary {
     private readonly userInterface: UserInterfaceGateway,
     private readonly profiles: AccessibilityProfileService,
     private readonly speech: SpeechSynthesizer,
+    private readonly spokenFeedback?: SpokenFeedback,
   ) {}
 
   public async execute(scope: CodeSummaryScope): Promise<void> {
@@ -50,7 +52,7 @@ export class GenerateCodeSummary {
       (signal) => this.ai.generate(request, this.outputParser, signal),
     );
     if (!result.ok) {
-      await reportAiError(result.error, this.userInterface);
+      await reportAiError(result.error, this.userInterface, this.spokenFeedback);
       return;
     }
 

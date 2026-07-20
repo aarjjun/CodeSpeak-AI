@@ -9,7 +9,7 @@ import type { AccessibleSpeechService } from '../../application/services/accessi
 const SPEECH_EXTENSION_ID = 'ms-vscode.vscode-speech';
 const START_DICTATION_COMMAND = 'workbench.action.editorDictation.start';
 const STOP_DICTATION_COMMAND = 'workbench.action.editorDictation.stop';
-const DEFAULT_SILENCE_TIMEOUT_SECONDS = 8;
+const DEFAULT_SILENCE_TIMEOUT_SECONDS = 3;
 
 type VoiceState = 'idle' | 'listening' | 'processing';
 
@@ -115,7 +115,7 @@ export class VsCodeDictationController implements vscode.Disposable {
     await vscode.commands.executeCommand('setContext', 'codespeak.voiceListening', true);
     this.renderStatus();
     this.audioCues.play('listening-started');
-    await this.speech.speak(
+    await this.userInterface.announce(
       this.continuous
         ? 'Continuous voice mode listening. Speak a command, then pause.'
         : 'Voice mode active. Speak a command or begin with type to dictate.',
@@ -179,7 +179,7 @@ export class VsCodeDictationController implements vscode.Disposable {
 
     if (execute && transcript.length > 0) {
       this.audioCues.play('recognized');
-      await this.speech.speak(`Recognized: ${transcript}`);
+      await this.userInterface.announce(`Recognized: ${transcript}`);
       await this.executor.execute(await this.resolver.resolve(transcript), transcript);
       this.audioCues.play('completed');
     } else if (execute) {

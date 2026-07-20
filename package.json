@@ -253,6 +253,11 @@
         "enablement": "codespeak.voiceListening"
       },
       {
+        "command": "codespeak.voice.simulate",
+        "title": "Enter Voice Command as Text",
+        "category": "CodeSpeak AI"
+      },
+      {
         "command": "codespeak.speech.speakSelection",
         "title": "Read Selection Aloud",
         "category": "CodeSpeak AI"
@@ -373,7 +378,7 @@
         },
         "codespeak.voice.silenceTimeoutSeconds": {
           "type": "number",
-          "default": 8,
+          "default": 3,
           "minimum": 2,
           "maximum": 60,
           "description": "Seconds of silence before the current utterance is processed."

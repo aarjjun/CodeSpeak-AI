@@ -11,14 +11,15 @@ import type {
 } from '../../../domain/ai/ai-contracts';
 import type { OperationError, OperationResult } from '../../../domain/shared/operation-error';
 import { SecretKeys } from '../../../config/secrets';
+import type { Logger } from '../../../application/ports/platform/logger';
 
 const SYSTEM_PROMPT_ID = 'system.accessibility';
 const API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 const MAXIMUM_CONTEXT_ITEMS = 20;
 const MAXIMUM_CONTEXT_CHARACTERS = 80_000;
 const MAXIMUM_ITEM_CHARACTERS = 30_000;
-const MAXIMUM_ATTEMPTS = 3;
-const REQUEST_TIMEOUT_MILLISECONDS = 60_000;
+const MAXIMUM_ATTEMPTS = 2;
+const REQUEST_TIMEOUT_MILLISECONDS = 30_000;
 
 export class GeminiProvider implements AiProvider {
   public readonly id = 'gemini';
@@ -27,6 +28,7 @@ export class GeminiProvider implements AiProvider {
     private readonly secrets: SecretStore,
     private readonly configuration: ConfigurationGateway,
     private readonly prompts: PromptRepository,
+    private readonly logger?: Logger,
   ) {}
 
   public async generate<TOutput>(
@@ -114,7 +116,15 @@ export class GeminiProvider implements AiProvider {
         },
       };
     } catch (error: unknown) {
-      return { ok: false, error: this.mapError(error, signal) };
+      const mappedError = this.mapError(error, signal);
+      this.logger?.error('Gemini request failed.', error, {
+        capability: request.capability,
+        model: request.model ?? this.configuration.get().model,
+        errorCode: mappedError.code,
+        retryable: mappedError.retryable,
+        ...(error instanceof GeminiHttpError ? { httpStatus: error.status } : {}),
+      });
+      return { ok: false, error: mappedError };
     }
   }
 
@@ -274,7 +284,7 @@ export class GeminiProvider implements AiProvider {
   }
 
   private isRetryableStatus(status: number): boolean {
-    return status === 408 || status === 429 || status >= 500;
+    return status === 408 || status >= 500;
   }
 
   private mapError(error: unknown, signal?: AbortSignal): OperationError {
@@ -310,10 +320,19 @@ export class GeminiProvider implements AiProvider {
           recoveryActions: [],
         };
       }
-      if (error.status >= 500 || error.status === 408) {
+      if (error.status === 408) {
         return {
           code: 'provider-unavailable',
-          message: 'Gemini is temporarily unavailable. Try again shortly.',
+          message: 'The Gemini request timed out. Try again with a smaller request.',
+          technicalMessage: error.message,
+          retryable: true,
+          recoveryActions: [],
+        };
+      }
+      if (error.status >= 500) {
+        return {
+          code: 'provider-unavailable',
+          message: `Gemini is temporarily unavailable. The service returned HTTP ${String(error.status)}. Try again shortly.`,
           technicalMessage: error.message,
           retryable: true,
           recoveryActions: [],

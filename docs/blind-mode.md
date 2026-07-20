@@ -2,6 +2,8 @@
 
 Blind Mode uses Microsoft VS Code Speech for local transcription. CodeSpeak receives transcript text, resolves deterministic commands first, and asks Gemini to classify only transcripts that did not match a known command. Spoken input is inserted into the editor only when the resolved intent is dictation.
 
+When a microphone is unavailable, run **CodeSpeak AI: Enter Voice Command as Text**. The typed phrase uses the same intent resolver, confirmation rules, command registry, and executor as a spoken transcript.
+
 ## Resolution order
 
 1. Stop, pause, continue, confirm, and cancel.
@@ -26,6 +28,8 @@ Blind Mode uses Microsoft VS Code Speech for local transcription. CodeSpeak rece
 - Open folder.
 - Open the Downloads folder.
 - Ask Copilot to explain this function.
+- Ask Gemini what is recursion.
+- Use Gemini to explain the selected code.
 - Type hello world.
 - List CodeSpeak commands.
 - Stop reading.
@@ -36,6 +40,7 @@ Blind Mode uses Microsoft VS Code Speech for local transcription. CodeSpeak rece
 - CodeSpeak does not store voice recordings or transcripts.
 - Workspace changes, renames, generated edits, and other mutating actions retain confirmation boundaries.
 - Copilot requests are opened in GitHub Copilot Chat and are never silently sent to Gemini.
+- Explicit Gemini requests are processed by the configured Gemini API and the answer is spoken in Blind Mode.
 - The selected code can be excluded from Copilot prompts with the CodeSpeak privacy setting.
 - Native VS Code controls are used instead of custom webviews.
 

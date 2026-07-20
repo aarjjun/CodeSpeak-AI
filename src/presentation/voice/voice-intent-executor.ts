@@ -82,6 +82,12 @@ export class VoiceIntentExecutor {
       case 'copilot-chat':
         await this.copilot.send(this.stringParameter(intent, 'prompt'));
         return;
+      case 'gemini-chat':
+        await vscode.commands.executeCommand(
+          CommandIds.askLearningQuestion,
+          this.stringParameter(intent, 'prompt'),
+        );
+        return;
       case 'open-folder':
         await this.folders.open(this.optionalStringParameter(intent, 'name'));
         return;

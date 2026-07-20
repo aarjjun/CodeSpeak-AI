@@ -4,6 +4,7 @@ import type { UserInterfaceGateway } from '../../ports/platform/user-interface-g
 import type { AiOutputParser, AiRequest } from '../../../domain/ai/ai-contracts';
 import type { DocumentationGenerationResult } from '../../../domain/ai/ai-results';
 import { reportAiError } from './report-ai-error';
+import type { SpokenFeedback } from '../../ports/speech/spoken-feedback';
 
 const STYLES: Readonly<Record<string, DocumentationGenerationResult['style']>> = {
   python: 'docstring',
@@ -22,6 +23,7 @@ export class GenerateDocumentation {
     private readonly outputParser: AiOutputParser<DocumentationGenerationResult>,
     private readonly editor: EditorGateway,
     private readonly userInterface: UserInterfaceGateway,
+    private readonly spokenFeedback?: SpokenFeedback,
   ) {}
 
   public async execute(confirmationAlreadyGranted = false): Promise<void> {
@@ -58,7 +60,7 @@ export class GenerateDocumentation {
       (signal) => this.ai.generate(request, this.outputParser, signal),
     );
     if (!result.ok) {
-      await reportAiError(result.error, this.userInterface);
+      await reportAiError(result.error, this.userInterface, this.spokenFeedback);
       return;
     }
 
@@ -70,13 +72,18 @@ export class GenerateDocumentation {
         : `${generated.documentation}\n\nUsage example:\n${generated.usageExample}`,
       'markdown',
     );
+    if (this.spokenFeedback !== undefined) {
+      await this.spokenFeedback.speak(generated.explanation);
+    }
     const confirmed =
       confirmationAlreadyGranted ||
       (await this.userInterface.confirm(
         `Insert the generated ${generated.style} before the selected code?`,
       ));
     if (!confirmed) {
-      await this.userInterface.announce('Generated documentation was not inserted.');
+      if (this.spokenFeedback === undefined)
+        await this.userInterface.announce('Generated documentation was not inserted.');
+      else await this.spokenFeedback.speak('Generated documentation was not inserted.');
       return;
     }
 
@@ -93,6 +100,8 @@ export class GenerateDocumentation {
       await this.userInterface.showError('CodeSpeak could not insert the generated documentation.');
       return;
     }
-    await this.userInterface.announce('Generated documentation inserted.');
+    if (this.spokenFeedback === undefined)
+      await this.userInterface.announce('Generated documentation inserted.');
+    else await this.spokenFeedback.speak('Generated documentation inserted.');
   }
 }

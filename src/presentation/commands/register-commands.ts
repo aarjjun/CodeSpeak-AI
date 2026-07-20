@@ -53,17 +53,25 @@ export function registerCommands(
   const history = new EditorHistory(services.editor);
   const goToLine = new GoToLine(services.editor, services.userInterface);
   const openFile = new OpenFile(services.workspace, services.editor, services.userInterface);
+  const accessibleSpeech = new AccessibleSpeechService(
+    services.speech,
+    services.profiles,
+    services.configuration,
+    services.userInterface,
+  );
   const generateCode = new GenerateCode(
     services.ai,
     generatedCodeParser,
     services.editor,
     services.userInterface,
+    accessibleSpeech,
   );
   const explainSelection = new ExplainSelection(
     services.ai,
     codeExplanationParser,
     services.editor,
     services.userInterface,
+    accessibleSpeech,
   );
   const explainDiagnostic = new ExplainDiagnostic(
     services.ai,
@@ -71,12 +79,14 @@ export function registerCommands(
     services.diagnostics,
     services.editor,
     services.userInterface,
+    accessibleSpeech,
   );
   const generateDocumentation = new GenerateDocumentation(
     services.ai,
     documentationGenerationParser,
     services.editor,
     services.userInterface,
+    accessibleSpeech,
   );
   const generateCodeSummary = new GenerateCodeSummary(
     services.ai,
@@ -86,12 +96,14 @@ export function registerCommands(
     services.userInterface,
     services.profiles,
     services.speech,
+    accessibleSpeech,
   );
   const assistLearning = new AssistLearning(
     services.ai,
     learningAssistanceParser,
     services.editor,
     services.userInterface,
+    accessibleSpeech,
   );
   const selectAccessibilityProfile = new SelectAccessibilityProfile(
     new AccessibilityProfileCatalog(),
@@ -112,20 +124,22 @@ export function registerCommands(
     services.editor,
     services.userInterface,
   );
-  const accessibleSpeech = new AccessibleSpeechService(
-    services.speech,
-    services.profiles,
-    services.configuration,
-    services.userInterface,
-  );
   const blindReader = new BlindContextReader(accessibleSpeech);
   const copilot = new CopilotChatIntegration(accessibleSpeech);
   const folders = new VoiceFolderController(accessibleSpeech, services.userInterface);
   const audioCues = new AudioCueService();
   const voiceHelp = new VoiceCommandHelp(accessibleSpeech);
+  const voiceResolver = new VoiceIntentResolver(new VoiceIntentParser(), services.ai);
+  const voiceExecutor = new VoiceIntentExecutor(
+    blindReader,
+    copilot,
+    folders,
+    accessibleSpeech,
+    audioCues,
+  );
   const voice = new VsCodeDictationController(
-    new VoiceIntentResolver(new VoiceIntentParser(), services.ai),
-    new VoiceIntentExecutor(blindReader, copilot, folders, accessibleSpeech, audioCues),
+    voiceResolver,
+    voiceExecutor,
     services.userInterface,
     services.logger,
     audioCues,
@@ -243,6 +257,24 @@ export function registerCommands(
     [CommandIds.voiceToggle, async () => voice.toggle()],
     [CommandIds.voiceStartContinuous, async () => voice.startContinuous()],
     [CommandIds.voiceStopContinuous, async () => voice.stopContinuous()],
+    [
+      CommandIds.voiceSimulate,
+      async () => {
+        const transcript = await services.userInterface.requestText(
+          'Enter a Blind Mode voice command',
+          {
+            placeHolder: 'For example: where am I, read line 6, or type hello world',
+          },
+        );
+        if (transcript === undefined || transcript.trim().length === 0) return;
+        const normalizedTranscript = transcript.trim();
+        await services.userInterface.announce(`Testing voice command: ${normalizedTranscript}`);
+        await voiceExecutor.execute(
+          await voiceResolver.resolve(normalizedTranscript),
+          normalizedTranscript,
+        );
+      },
+    ],
     [CommandIds.speakSelection, async () => speakSelection.execute()],
     [CommandIds.stopSpeaking, async () => accessibleSpeech.stop()],
     [CommandIds.pauseSpeech, async () => accessibleSpeech.pause()],

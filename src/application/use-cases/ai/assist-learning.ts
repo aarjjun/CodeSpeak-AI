@@ -4,6 +4,7 @@ import type { UserInterfaceGateway } from '../../ports/platform/user-interface-g
 import type { AiOutputParser, AiRequest } from '../../../domain/ai/ai-contracts';
 import type { LearningAssistanceResult } from '../../../domain/ai/ai-results';
 import { reportAiError } from './report-ai-error';
+import type { SpokenFeedback } from '../../ports/speech/spoken-feedback';
 
 export class AssistLearning {
   public constructor(
@@ -11,6 +12,7 @@ export class AssistLearning {
     private readonly outputParser: AiOutputParser<LearningAssistanceResult>,
     private readonly editor: EditorGateway,
     private readonly userInterface: UserInterfaceGateway,
+    private readonly spokenFeedback?: SpokenFeedback,
   ) {}
 
   public async execute(initialQuestion?: string): Promise<void> {
@@ -47,7 +49,7 @@ export class AssistLearning {
       (signal) => this.ai.generate(request, this.outputParser, signal),
     );
     if (!result.ok) {
-      await reportAiError(result.error, this.userInterface);
+      await reportAiError(result.error, this.userInterface, this.spokenFeedback);
       return;
     }
     const learning = result.value.output;
@@ -72,6 +74,7 @@ export class AssistLearning {
       ].join('\n'),
       'markdown',
     );
-    await this.userInterface.announce(learning.explanation);
+    if (this.spokenFeedback === undefined) await this.userInterface.announce(learning.explanation);
+    else await this.spokenFeedback.speak(learning.explanation);
   }
 }

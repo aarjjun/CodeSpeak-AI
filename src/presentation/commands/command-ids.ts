@@ -46,6 +46,7 @@ export const CommandIds = {
   undo: 'codespeak.undo',
   voiceStartContinuous: 'codespeak.voice.startContinuous',
   voiceStopContinuous: 'codespeak.voice.stopContinuous',
+  voiceSimulate: 'codespeak.voice.simulate',
   voiceToggle: 'codespeak.voice.toggle',
   whereAmI: 'codespeak.whereAmI',
 } as const;

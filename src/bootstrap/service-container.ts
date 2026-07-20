@@ -51,6 +51,7 @@ export interface ServiceContainer {
 
 export function createServiceContainer(context: vscode.ExtensionContext): ServiceContainer {
   const outputChannel = vscode.window.createOutputChannel('CodeSpeak AI');
+  const logger = new OutputChannelLogger(outputChannel);
   const userInterface = new VsCodeUserInterfaceGateway();
   context.subscriptions.push(outputChannel, userInterface);
   const configuration = new VsCodeConfigurationGateway();
@@ -77,11 +78,11 @@ export function createServiceContainer(context: vscode.ExtensionContext): Servic
   return {
     accessibilityAnalyzer: new TypeScriptAccessibilityAnalyzer(),
     accessibilityReports,
-    ai: new GeminiProvider(secrets, configuration, prompts),
+    ai: new GeminiProvider(secrets, configuration, prompts, logger),
     configuration,
     diagnostics: new VsCodeDiagnosticsGateway(),
     editor: new VsCodeEditorGateway(),
-    logger: new OutputChannelLogger(outputChannel),
+    logger,
     parser: new ParserRegistry([new TypeScriptAstParser()]),
     profiles: new AccessibilityProfileService(configuration, profileCatalog),
     secrets,

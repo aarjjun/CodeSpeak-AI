@@ -2,10 +2,9 @@ import type { SpeechSynthesizer } from '../ports/speech/speech-synthesizer';
 import type { UserInterfaceGateway } from '../ports/platform/user-interface-gateway';
 import type { AccessibilityProfileService } from './accessibility-profile-service';
 import type { ConfigurationGateway } from '../ports/platform/configuration-gateway';
+import type { SpeechPriority, SpokenFeedback } from '../ports/speech/spoken-feedback';
 
-export type SpeechPriority = 'normal' | 'critical';
-
-export class AccessibleSpeechService {
+export class AccessibleSpeechService implements SpokenFeedback {
   private lastMessage: string | undefined;
   private pausedMessage: string | undefined;
   private rateAdjustment = 0;
