@@ -61,4 +61,24 @@ describe('TypeScriptAccessibilityAnalyzer', () => {
       expect(result.value.issues).toHaveLength(0);
     }
   });
+
+  it('detects empty links and positive tab order values', async () => {
+    const analyzer = new TypeScriptAccessibilityAnalyzer();
+    const result = await analyzer.analyze(
+      {
+        uri: 'file:///navigation.tsx',
+        languageId: 'typescriptreact',
+        version: 1,
+        content: '<main><a href="/settings" /><div tabIndex={2}>Settings</div></main>',
+      },
+      'WCAG-2.2-AA',
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const ruleIds = result.value.issues.map((issue) => issue.ruleId);
+      expect(ruleIds).toContain('jsx-anchor-name');
+      expect(ruleIds).toContain('jsx-positive-tabindex');
+    }
+  });
 });

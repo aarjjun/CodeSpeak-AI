@@ -5,10 +5,12 @@ import type {
   DiagnosticExplanationResult,
   DocumentationGenerationResult,
   GeneratedCodeResult,
+  LearningAssistanceResult,
 } from '../../../domain/ai/ai-results';
 import type { OperationResult } from '../../../domain/shared/operation-error';
 
 type JsonObject = Readonly<Record<string, unknown>>;
+const INVALID_OPTIONAL_STRING = Symbol('invalid optional string');
 
 class JsonOutputParser<TOutput> implements AiOutputParser<TOutput> {
   public constructor(
@@ -62,16 +64,24 @@ export const codeExplanationParser = new JsonOutputParser<CodeExplanationResult>
   objectSchema({
     summary: stringProperty,
     details: stringArrayProperty(12, 1),
+    whyItWorks: stringProperty,
+    alternatives: stringArrayProperty(6),
     considerations: stringArrayProperty(8),
   }),
   (value) => {
     const object = asObject(value);
     const summary = nonEmptyString(object?.summary);
     const details = stringArray(object?.details, 1, 12);
+    const whyItWorks = nonEmptyString(object?.whyItWorks);
+    const alternatives = stringArray(object?.alternatives, 0, 6);
     const considerations = stringArray(object?.considerations, 0, 8);
-    return summary === undefined || details === undefined || considerations === undefined
+    return summary === undefined ||
+      details === undefined ||
+      whyItWorks === undefined ||
+      alternatives === undefined ||
+      considerations === undefined
       ? undefined
-      : { summary, details, considerations };
+      : { summary, details, whyItWorks, alternatives, considerations };
   },
 );
 
@@ -101,15 +111,42 @@ export const documentationGenerationParser = new JsonOutputParser<DocumentationG
     documentation: stringProperty,
     style: { type: 'string', enum: documentationStyles },
     explanation: stringProperty,
+    usageExample: { anyOf: [stringProperty, { type: 'null' }] },
   }),
   (value) => {
     const object = asObject(value);
     const documentation = nonEmptyString(object?.documentation);
     const style = documentationStyle(object?.style);
     const explanation = nonEmptyString(object?.explanation);
-    return documentation === undefined || style === undefined || explanation === undefined
+    const usageExample = optionalString(object?.usageExample);
+    return documentation === undefined ||
+      style === undefined ||
+      explanation === undefined ||
+      usageExample === INVALID_OPTIONAL_STRING
       ? undefined
-      : { documentation, style, explanation };
+      : { documentation, style, explanation, usageExample };
+  },
+);
+
+export const learningAssistanceParser = new JsonOutputParser<LearningAssistanceResult>(
+  objectSchema({
+    explanation: stringProperty,
+    example: stringProperty,
+    exercise: stringProperty,
+    feedback: stringProperty,
+  }),
+  (value) => {
+    const object = asObject(value);
+    const explanation = nonEmptyString(object?.explanation);
+    const example = nonEmptyString(object?.example);
+    const exercise = nonEmptyString(object?.exercise);
+    const feedback = nonEmptyString(object?.feedback);
+    return explanation === undefined ||
+      example === undefined ||
+      exercise === undefined ||
+      feedback === undefined
+      ? undefined
+      : { explanation, example, exercise, feedback };
   },
 );
 
@@ -183,6 +220,13 @@ function nonEmptyString(value: unknown): string | undefined {
   }
   const trimmed = value.trim();
   return trimmed.length === 0 ? undefined : trimmed;
+}
+
+function optionalString(value: unknown): string | undefined | typeof INVALID_OPTIONAL_STRING {
+  if (value === null) {
+    return undefined;
+  }
+  return nonEmptyString(value) ?? INVALID_OPTIONAL_STRING;
 }
 
 function stringArray(

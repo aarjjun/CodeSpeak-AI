@@ -3,6 +3,7 @@ import type { AiProvider } from '../../../src/application/ports/ai/ai-provider';
 import type { DiagnosticsGateway } from '../../../src/application/ports/platform/diagnostics-gateway';
 import type { EditorGateway } from '../../../src/application/ports/platform/editor-gateway';
 import type { UserInterfaceGateway } from '../../../src/application/ports/platform/user-interface-gateway';
+import type { SpokenFeedback } from '../../../src/application/ports/speech/spoken-feedback';
 import { ExplainDiagnostic } from '../../../src/application/use-cases/ai/explain-diagnostic';
 import { ExplainSelection } from '../../../src/application/use-cases/ai/explain-selection';
 import { GenerateDocumentation } from '../../../src/application/use-cases/ai/generate-documentation';
@@ -88,10 +89,37 @@ function userInterface(selected?: string): {
 }
 
 describe('AI assistance use cases', () => {
+  it('speaks an AI explanation through Blind Mode feedback', async () => {
+    const ai = new CapturingAiProvider({
+      summary: 'Returns the number 42.',
+      details: ['Declares a function.'],
+      whyItWorks: 'The function returns a numeric literal.',
+      alternatives: [],
+      considerations: [],
+    });
+    const targetEditor = editor();
+    const interfaceState = userInterface();
+    const speak = vi.fn().mockResolvedValue(undefined);
+    const feedback: SpokenFeedback = { speak };
+
+    await new ExplainSelection(
+      ai,
+      codeExplanationParser,
+      targetEditor.gateway,
+      interfaceState.gateway,
+      feedback,
+    ).execute();
+
+    expect(speak).toHaveBeenCalledWith('Returns the number 42.');
+    expect(interfaceState.announce).not.toHaveBeenCalled();
+  });
+
   it('explains the selected code with bounded selection context', async () => {
     const ai = new CapturingAiProvider({
       summary: 'Returns the number 42.',
       details: ['Declares a function.', 'Returns a numeric literal.'],
+      whyItWorks: 'The return statement passes the numeric literal to the caller.',
+      alternatives: ['Return a computed value when the answer should vary.'],
       considerations: [],
     });
     const targetEditor = editor();
@@ -114,11 +142,37 @@ describe('AI assistance use cases', () => {
     expect(interfaceState.announce).toHaveBeenCalledWith('Returns the number 42.');
   });
 
+  it('uses the current line when no code is selected', async () => {
+    const ai = new CapturingAiProvider({
+      summary: 'Returns the answer.',
+      details: ['Returns a numeric literal.'],
+      whyItWorks: 'The return statement provides the function result.',
+      alternatives: [],
+      considerations: [],
+    });
+    const targetEditor = editor();
+    targetEditor.gateway.getSelection = () =>
+      Promise.resolve({
+        text: '',
+        range: { start: { line: 0, character: 5 }, end: { line: 0, character: 5 } },
+      });
+
+    await new ExplainSelection(
+      ai,
+      codeExplanationParser,
+      targetEditor.gateway,
+      userInterface().gateway,
+    ).execute();
+
+    expect(ai.request?.context[0]?.content).toBe('function answer() { return 42; }');
+  });
+
   it('generates documentation and inserts it only after confirmation', async () => {
     const ai = new CapturingAiProvider({
       documentation: '/** Returns the answer. */',
       style: 'jsdoc',
       explanation: 'Documents the return value.',
+      usageExample: null,
     });
     const targetEditor = editor();
 

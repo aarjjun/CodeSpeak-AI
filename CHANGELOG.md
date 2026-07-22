@@ -4,6 +4,17 @@ All notable changes to CodeSpeak AI are documented here.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Added
+
+- Voice-first Blind Mode with deterministic command resolution and explicit dictation fallback.
+- A shared command registry used by Command Palette and voice actions.
+- Context-aware selection, line, symbol, folder, workspace, and diagnostic reading.
+- GitHub Copilot Chat routing without Gemini fallback.
+- Spoken destructive-action confirmation, speech controls, configurable silence timeout, and optional audio cues.
+- Voice intent classification for unmatched requests and tests for common recognition variants.
+
 ## [0.2.0] - 2026-07-19
 
 ### Added

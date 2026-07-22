@@ -7,6 +7,8 @@ export interface GeneratedCodeResult {
 export interface CodeExplanationResult {
   readonly summary: string;
   readonly details: readonly string[];
+  readonly whyItWorks: string;
+  readonly alternatives: readonly string[];
   readonly considerations: readonly string[];
 }
 
@@ -20,6 +22,14 @@ export interface DocumentationGenerationResult {
   readonly documentation: string;
   readonly style: 'docstring' | 'jsdoc' | 'javadoc' | 'doxygen';
   readonly explanation: string;
+  readonly usageExample: string | undefined;
+}
+
+export interface LearningAssistanceResult {
+  readonly explanation: string;
+  readonly example: string;
+  readonly exercise: string;
+  readonly feedback: string;
 }
 
 export type CodeSummaryScope = 'file' | 'folder' | 'workspace';

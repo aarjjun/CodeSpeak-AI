@@ -18,12 +18,29 @@ export interface SpeechTranscript {
 }
 
 export type VoiceIntentName =
+  | 'codespeak-command'
   | 'create-code'
+  | 'modify-code'
+  | 'rename-symbol'
+  | 'quick-fix'
+  | 'copilot-chat'
+  | 'gemini-chat'
+  | 'dictation'
   | 'open-file'
+  | 'open-folder'
   | 'go-to-line'
+  | 'read-line'
+  | 'read-line-range'
   | 'read-current-function'
   | 'find-symbol'
   | 'explain-selection'
+  | 'explain-diagnostic'
+  | 'summarize-file'
+  | 'check-accessibility'
+  | 'start-focus-timer'
+  | 'speech-control'
+  | 'confirm'
+  | 'cancel'
   | 'undo'
   | 'redo'
   | 'unknown';
@@ -38,4 +55,6 @@ export interface VoiceIntent {
 export interface SpeechSynthesisOptions {
   readonly language: string;
   readonly rate: number;
+  readonly volume?: number;
+  readonly voiceName?: string;
 }

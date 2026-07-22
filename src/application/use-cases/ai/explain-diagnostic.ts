@@ -6,6 +6,7 @@ import type { AiOutputParser, AiRequest } from '../../../domain/ai/ai-contracts'
 import type { DiagnosticExplanationResult } from '../../../domain/ai/ai-results';
 import type { CodeDiagnostic } from '../../../domain/diagnostics/diagnostic-contracts';
 import { reportAiError } from './report-ai-error';
+import type { SpokenFeedback } from '../../ports/speech/spoken-feedback';
 
 export class ExplainDiagnostic {
   public constructor(
@@ -14,6 +15,7 @@ export class ExplainDiagnostic {
     private readonly diagnostics: DiagnosticsGateway,
     private readonly editor: EditorGateway,
     private readonly userInterface: UserInterfaceGateway,
+    private readonly spokenFeedback?: SpokenFeedback,
   ) {}
 
   public async execute(): Promise<void> {
@@ -27,15 +29,31 @@ export class ExplainDiagnostic {
       return;
     }
 
-    const selectedId = await this.userInterface.choose(
-      'Choose a diagnostic to explain',
-      available.slice(0, 100).map((diagnostic) => ({
-        id: diagnostic.id,
-        label: `${diagnostic.severity}: ${diagnostic.message}`,
-        description: this.locationLabel(diagnostic),
-      })),
-    );
-    const diagnostic = available.find((item) => item.id === selectedId);
+    const selection = await this.editor.getSelection();
+    const currentLine = selection?.range.start.line;
+    const currentDiagnostics =
+      currentLine === undefined
+        ? []
+        : available.filter((item) => {
+            const range = item.location.range;
+            return (
+              range !== undefined &&
+              range.start.line <= currentLine &&
+              range.end.line >= currentLine
+            );
+          });
+    let diagnostic = currentDiagnostics.length === 1 ? currentDiagnostics[0] : undefined;
+    if (diagnostic === undefined) {
+      const selectedId = await this.userInterface.choose(
+        'Choose a diagnostic to explain',
+        available.slice(0, 100).map((candidate) => ({
+          id: candidate.id,
+          label: `${candidate.severity}: ${candidate.message}`,
+          description: this.locationLabel(candidate),
+        })),
+      );
+      diagnostic = available.find((item) => item.id === selectedId);
+    }
     if (diagnostic === undefined) {
       return;
     }
@@ -62,7 +80,7 @@ export class ExplainDiagnostic {
       (signal) => this.ai.generate(request, this.outputParser, signal),
     );
     if (!result.ok) {
-      await reportAiError(result.error, this.userInterface);
+      await reportAiError(result.error, this.userInterface, this.spokenFeedback);
       return;
     }
 
@@ -79,7 +97,9 @@ export class ExplainDiagnostic {
       ...explanation.suggestedNextSteps.map((step) => `- ${step}`),
     ].join('\n');
     await this.editor.showPreview('CodeSpeak diagnostic explanation', content, 'markdown');
-    await this.userInterface.announce(explanation.plainLanguageExplanation);
+    if (this.spokenFeedback === undefined)
+      await this.userInterface.announce(explanation.plainLanguageExplanation);
+    else await this.spokenFeedback.speak(explanation.plainLanguageExplanation);
   }
 
   private locationLabel(diagnostic: CodeDiagnostic): string {

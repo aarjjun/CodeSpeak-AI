@@ -26,6 +26,7 @@ const EXPECTED_COMMANDS = [
   'codespeak.undo',
   'codespeak.voice.startContinuous',
   'codespeak.voice.stopContinuous',
+  'codespeak.voice.simulate',
   'codespeak.voice.toggle',
 ] as const;
 

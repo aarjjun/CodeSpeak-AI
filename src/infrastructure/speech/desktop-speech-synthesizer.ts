@@ -7,6 +7,7 @@ import type { SpeechSynthesisOptions } from '../../domain/speech/speech-contract
 export interface SpeechProcess {
   readonly executable: string;
   readonly arguments: readonly string[];
+  readonly environment?: Readonly<Record<string, string>>;
 }
 
 export function createDesktopSpeechProcess(
@@ -16,40 +17,56 @@ export function createDesktopSpeechProcess(
   if (platform === 'win32') {
     const rate = Math.round(Math.max(-10, Math.min(10, (options.rate - 1) * 7)));
     const script = [
-      '$rate=[int]$args[0]',
-      '$language=$args[1]',
+      '$rate=[int]$env:CODESPEAK_SPEECH_RATE',
+      '$language=$env:CODESPEAK_SPEECH_LANGUAGE',
       '$text=[Console]::In.ReadToEnd()',
       'Add-Type -AssemblyName System.Speech',
       '$speaker=New-Object System.Speech.Synthesis.SpeechSynthesizer',
       '$speaker.Rate=$rate',
+      '$speaker.Volume=[int]$env:CODESPEAK_SPEECH_VOLUME',
       '$voice=$speaker.GetInstalledVoices() | Where-Object { $_.VoiceInfo.Culture.Name -eq $language } | Select-Object -First 1',
-      'if ($null -ne $voice) { $speaker.SelectVoice($voice.VoiceInfo.Name) }',
+      'if ($null -ne $voice) { try { $speaker.SelectVoice($voice.VoiceInfo.Name) } catch {} }',
+      '$voiceName=$env:CODESPEAK_SPEECH_VOICE',
+      'if ($voiceName.Length -gt 0) { try { $speaker.SelectVoice($voiceName) } catch {} }',
       '$speaker.Speak($text)',
+      '$speaker.Dispose()',
     ].join('; ');
     return {
       executable: 'powershell.exe',
-      arguments: [
-        '-NoProfile',
-        '-NonInteractive',
-        '-Command',
-        script,
-        String(rate),
-        options.language,
-      ],
+      arguments: ['-NoProfile', '-NonInteractive', '-Command', script],
+      environment: {
+        CODESPEAK_SPEECH_RATE: String(rate),
+        CODESPEAK_SPEECH_LANGUAGE: options.language,
+        CODESPEAK_SPEECH_VOLUME: String(options.volume ?? 100),
+        CODESPEAK_SPEECH_VOICE: options.voiceName ?? '',
+      },
     };
   }
 
   if (platform === 'darwin') {
     return {
       executable: 'say',
-      arguments: ['--rate', String(Math.round(180 * options.rate))],
+      arguments: [
+        '--rate',
+        String(Math.round(180 * options.rate)),
+        ...(options.voiceName === undefined ? [] : ['--voice', options.voiceName]),
+      ],
     };
   }
 
   const rate = Math.round(Math.max(-100, Math.min(100, (options.rate - 1) * 70)));
   return {
     executable: 'spd-say',
-    arguments: ['--wait', '--pipe-mode', '--language', options.language, '--rate', String(rate)],
+    arguments: [
+      '--wait',
+      '--pipe-mode',
+      '--language',
+      options.language,
+      '--rate',
+      String(rate),
+      '--volume',
+      String(Math.round((options.volume ?? 100) - 100)),
+    ],
   };
 }
 
@@ -82,6 +99,9 @@ export class DesktopSpeechSynthesizer implements SpeechSynthesizer {
       const child = spawn(command.executable, [...command.arguments], {
         stdio: ['pipe', 'ignore', 'pipe'],
         windowsHide: true,
+        ...(command.environment === undefined
+          ? {}
+          : { env: { ...process.env, ...command.environment } }),
       });
       this.activeProcess = child;
       let errorText = '';

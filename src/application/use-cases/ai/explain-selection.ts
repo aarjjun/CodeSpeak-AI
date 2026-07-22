@@ -4,6 +4,7 @@ import type { UserInterfaceGateway } from '../../ports/platform/user-interface-g
 import type { AiOutputParser, AiRequest } from '../../../domain/ai/ai-contracts';
 import type { CodeExplanationResult } from '../../../domain/ai/ai-results';
 import { reportAiError } from './report-ai-error';
+import type { SpokenFeedback } from '../../ports/speech/spoken-feedback';
 
 export class ExplainSelection {
   public constructor(
@@ -11,15 +12,18 @@ export class ExplainSelection {
     private readonly outputParser: AiOutputParser<CodeExplanationResult>,
     private readonly editor: EditorGateway,
     private readonly userInterface: UserInterfaceGateway,
+    private readonly spokenFeedback?: SpokenFeedback,
   ) {}
 
   public async execute(): Promise<void> {
     const document = await this.editor.getActiveDocument();
     const selection = await this.editor.getSelection();
-    if (document === undefined || selection === undefined || selection.text.trim().length === 0) {
-      await this.userInterface.showWarning('Select code before asking CodeSpeak to explain it.');
+    if (document === undefined || selection === undefined) {
+      await this.userInterface.showWarning('Open a file before asking CodeSpeak to explain code.');
       return;
     }
+
+    const context = this.selectionOrCurrentLine(document.content, selection);
 
     const request: AiRequest = {
       capability: 'code-explanation',
@@ -28,9 +32,9 @@ export class ExplainSelection {
       context: [
         {
           kind: 'selection',
-          content: selection.text,
+          content: context.text,
           languageId: document.languageId,
-          source: { uri: document.uri, range: selection.range },
+          source: { uri: document.uri, range: context.range },
         },
       ],
     };
@@ -39,7 +43,7 @@ export class ExplainSelection {
       (signal) => this.ai.generate(request, this.outputParser, signal),
     );
     if (!result.ok) {
-      await reportAiError(result.error, this.userInterface);
+      await reportAiError(result.error, this.userInterface, this.spokenFeedback);
       return;
     }
 
@@ -51,11 +55,34 @@ export class ExplainSelection {
       '',
       '## Details',
       ...explanation.details.map((detail) => `- ${detail}`),
+      '',
+      '## Why this works',
+      explanation.whyItWorks,
+      ...(explanation.alternatives.length === 0
+        ? []
+        : ['', '## Alternatives', ...explanation.alternatives.map((item) => `- ${item}`)]),
       ...(explanation.considerations.length === 0
         ? []
         : ['', '## Considerations', ...explanation.considerations.map((item) => `- ${item}`)]),
     ].join('\n');
     await this.editor.showPreview('CodeSpeak explanation', content, 'markdown');
-    await this.userInterface.announce(explanation.summary);
+    if (this.spokenFeedback === undefined) await this.userInterface.announce(explanation.summary);
+    else await this.spokenFeedback.speak(explanation.summary);
+  }
+
+  private selectionOrCurrentLine(
+    documentContent: string,
+    selection: Awaited<ReturnType<EditorGateway['getSelection']>> & {},
+  ): { readonly text: string; readonly range: typeof selection.range } {
+    if (selection.text.trim().length > 0) return selection;
+    const lines = documentContent.split(/\r?\n/u);
+    const line = lines[selection.range.start.line] ?? '';
+    return {
+      text: line,
+      range: {
+        start: { line: selection.range.start.line, character: 0 },
+        end: { line: selection.range.start.line, character: line.length },
+      },
+    };
   }
 }

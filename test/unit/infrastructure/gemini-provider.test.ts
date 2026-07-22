@@ -3,6 +3,7 @@ import { GeminiProvider } from '../../../src/infrastructure/ai/gemini/gemini-pro
 import { generatedCodeParser } from '../../../src/infrastructure/ai/validation/ai-output-parsers';
 import type { PromptRepository } from '../../../src/application/ports/ai/prompt-repository';
 import type { ConfigurationGateway } from '../../../src/application/ports/platform/configuration-gateway';
+import type { Logger } from '../../../src/application/ports/platform/logger';
 import type { SecretStore } from '../../../src/application/ports/persistence/persistence-ports';
 import type { AiRequest, PromptVariables } from '../../../src/domain/ai/ai-contracts';
 
@@ -109,5 +110,45 @@ describe('GeminiProvider', () => {
       expect(result.value.usage).toEqual({ inputTokens: 20, outputTokens: 10 });
     }
     expect(requestBody).toMatchObject({ store: false });
+  });
+
+  it('reports and logs the exact Gemini server status after retries', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('Service unavailable', { status: 503 }))),
+    );
+    const logError = vi.fn();
+    const logger: Logger = {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: logError,
+    };
+    const provider = new GeminiProvider(secretStore('test-key'), configuration, prompts, logger);
+
+    const result = await provider.generate(request, generatedCodeParser);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.message).toContain('HTTP 503');
+    }
+    expect(logError).toHaveBeenCalledWith(
+      'Gemini request failed.',
+      expect.any(Error),
+      expect.objectContaining({ httpStatus: 503, model: 'gemini-3.5-flash' }),
+    );
+  });
+
+  it('reports a rate limit immediately without retrying the same request', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(new Response('Quota exceeded', { status: 429 })));
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new GeminiProvider(secretStore('test-key'), configuration, prompts);
+
+    const result = await provider.generate(request, generatedCodeParser);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('rate-limited');
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 });
