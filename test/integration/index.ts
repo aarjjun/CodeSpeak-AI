@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import * as vscode from 'vscode';
 
-const EXTENSION_ID = 'codespeak-ai.codespeak-ai';
+const EXTENSION_ID = 'arjunanoop.codespeak-ai';
 
 const EXPECTED_COMMANDS = [
   'codespeak.accessibility.showControls',
