@@ -12,8 +12,10 @@ The repository will publish a dedicated private security-reporting address befor
 
 ## Security boundaries
 
-- Gemini credentials are stored in VS Code SecretStorage.
-- Credentials are sent only to the configured Google Gemini API endpoint.
+- Gemini and OpenAI credentials are stored separately in VS Code SecretStorage.
+- Gemini credentials are sent only to the configured Google Gemini API endpoint.
+- OpenAI credentials are sent only to the OpenAI Responses API for explicitly invoked primary AI operations.
+- Gemini credentials are used only after an eligible OpenAI failure.
 - CodeSpeak does not execute generated code.
 - Generated edits require preview or confirmation.
 - Voice audio is processed by the optional Microsoft VS Code Speech extension; CodeSpeak consumes transcript text.

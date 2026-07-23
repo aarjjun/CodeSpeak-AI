@@ -2,7 +2,7 @@
 
 ## Design goals
 
-The architecture keeps accessibility policy and use cases independent from VS Code, Gemini, operating-system speech, and parser implementations. Dependencies point inward toward domain contracts.
+The architecture keeps accessibility policy and use cases independent from VS Code, OpenAI, Gemini, operating-system speech, and parser implementations. Dependencies point inward toward domain contracts.
 
 ```mermaid
 flowchart LR
@@ -11,7 +11,8 @@ flowchart LR
     Commands --> UseCases["Application use cases"]
     UseCases --> Domain["Domain models and policies"]
     UseCases --> Ports["Application ports"]
-    Ports --> Gemini["Gemini adapter"]
+    Ports --> OpenAI["OpenAI Responses adapter"]
+    Ports --> Gemini["Gemini fallback adapter"]
     Ports --> Parser["TypeScript AST adapter"]
     Ports --> Speech["VS Code Speech and desktop TTS"]
     Ports --> VSCode["Editor, workspace, diagnostics, secrets"]
@@ -19,13 +20,13 @@ flowchart LR
 
 ## Layers
 
-| Layer          | Responsibility                                                        | Examples                                                                 |
-| -------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Domain         | Stable models and accessibility rules without framework dependencies. | Profiles, voice intents, code structure, diagnostics.                    |
-| Application    | Orchestrates use cases through ports.                                 | Generate code, explain diagnostics, read structure, navigate files.      |
-| Infrastructure | Implements external technology boundaries.                            | Gemini REST, TypeScript AST, persistence, desktop speech.                |
-| Presentation   | Owns VS Code-native interaction and accessibility announcements.      | Commands, QuickPick, status bar, Problems diagnostics, voice controller. |
-| Bootstrap      | Composes concrete services and manages extension lifetime.            | Service container and extension activation.                              |
+| Layer          | Responsibility                                                        | Examples                                                                    |
+| -------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Domain         | Stable models and accessibility rules without framework dependencies. | Profiles, voice intents, code structure, diagnostics.                       |
+| Application    | Orchestrates use cases through ports.                                 | Generate code, explain diagnostics, read structure, navigate files.         |
+| Infrastructure | Implements external technology boundaries.                            | OpenAI Responses, Gemini REST, TypeScript AST, persistence, desktop speech. |
+| Presentation   | Owns VS Code-native interaction and accessibility announcements.      | Commands, QuickPick, status bar, Problems diagnostics, voice controller.    |
+| Bootstrap      | Composes concrete services and manages extension lifetime.            | Service container and extension activation.                                 |
 
 ## Request flow
 
@@ -53,7 +54,7 @@ sequenceDiagram
 
 ## AI boundary
 
-The Gemini adapter:
+The AI adapters:
 
 - Reads the key from SecretStorage.
 - Loads reusable prompts from `resources/prompts`.
@@ -61,7 +62,7 @@ The Gemini adapter:
 - Bounds request context and applies timeout/retry policy.
 - Maps provider errors into stable `OperationError` codes.
 
-Use cases never depend on Gemini-specific request types.
+The composition root routes requests through OpenAI first and announces an optional Gemini fallback. Use cases never depend on provider-specific request types.
 
 ## Parsing boundary
 

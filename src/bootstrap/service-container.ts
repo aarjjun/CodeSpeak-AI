@@ -15,6 +15,10 @@ import type { SecretStore, StateStore } from '../application/ports/persistence/p
 import { VsCodeConfigurationGateway } from '../config/vscode-configuration-gateway';
 import { OutputChannelLogger } from '../infrastructure/logging/output-channel-logger';
 import { GeminiProvider } from '../infrastructure/ai/gemini/gemini-provider';
+import { OpenAiProvider } from '../infrastructure/ai/openai/openai-provider';
+import { FallbackAiProvider } from '../infrastructure/ai/fallback/fallback-ai-provider';
+import { DemoAwareAiProvider } from '../infrastructure/ai/demo/demo-aware-ai-provider';
+import { LocalDemoAiProvider } from '../infrastructure/ai/demo/local-demo-ai-provider';
 import { TypeScriptAccessibilityAnalyzer } from '../infrastructure/accessibility/typescript-accessibility-analyzer';
 import { FilePromptRepository } from '../infrastructure/ai/prompts/file-prompt-repository';
 import { VsCodeSecretStore } from '../infrastructure/persistence/vscode-secret-store';
@@ -30,6 +34,7 @@ import type { SpeechSynthesizer } from '../application/ports/speech/speech-synth
 import { DesktopSpeechSynthesizer } from '../infrastructure/speech/desktop-speech-synthesizer';
 import { DiagnosticChangeNotifier } from '../presentation/accessibility/diagnostic-change-notifier';
 import { ProfileEditorController } from '../presentation/accessibility/profile-editor-controller';
+import { ProfileSettingsController } from '../presentation/accessibility/profile-settings-controller';
 import { CodeSpeakDashboardProvider } from '../presentation/providers/codespeak-dashboard-provider';
 
 export interface ServiceContainer {
@@ -57,11 +62,28 @@ export function createServiceContainer(context: vscode.ExtensionContext): Servic
   const configuration = new VsCodeConfigurationGateway();
   const secrets = new VsCodeSecretStore(context.secrets);
   const prompts = new FilePromptRepository(context.extensionUri);
+  const gemini = new GeminiProvider(secrets, configuration, prompts, logger);
+  const openAi = new OpenAiProvider(secrets, configuration, prompts, logger);
+  const liveAi = new FallbackAiProvider(openAi, gemini, async (primaryError) => {
+    logger.warn('OpenAI failed. Switching to the configured Gemini fallback.', {
+      errorCode: primaryError.code,
+    });
+    await userInterface.announce(
+      'OpenAI could not complete the request. Trying the configured Gemini fallback.',
+      'assertive',
+    );
+  });
+  const ai = new DemoAwareAiProvider(liveAi, new LocalDemoAiProvider(), () =>
+    vscode.workspace.getConfiguration('codespeak').get<boolean>('ai.demoMode', false),
+  );
   const accessibilityReports = new AccessibilityDiagnosticsProvider();
   const profileCatalog = new AccessibilityProfileCatalog();
   context.subscriptions.push(accessibilityReports);
   context.subscriptions.push(new DiagnosticChangeNotifier(configuration, userInterface));
   context.subscriptions.push(new ProfileEditorController(configuration));
+  context.subscriptions.push(
+    new ProfileSettingsController(configuration, context.workspaceState, logger),
+  );
   const dashboard = new CodeSpeakDashboardProvider(
     new AccessibilityProfileService(configuration, profileCatalog),
   );
@@ -78,7 +100,7 @@ export function createServiceContainer(context: vscode.ExtensionContext): Servic
   return {
     accessibilityAnalyzer: new TypeScriptAccessibilityAnalyzer(),
     accessibilityReports,
-    ai: new GeminiProvider(secrets, configuration, prompts, logger),
+    ai,
     configuration,
     diagnostics: new VsCodeDiagnosticsGateway(),
     editor: new VsCodeEditorGateway(),

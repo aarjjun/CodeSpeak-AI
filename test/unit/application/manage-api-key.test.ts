@@ -50,4 +50,15 @@ describe('ManageApiKey', () => {
 
     expect(remove).toHaveBeenCalledWith(SecretKeys.geminiApiKey);
   });
+
+  it('can securely manage the primary OpenAI key', async () => {
+    const { store, set, remove } = createSecretStore();
+    const useCase = new ManageApiKey(store, SecretKeys.openAiApiKey);
+
+    await useCase.save(' openai-example-key ');
+    await useCase.clear();
+
+    expect(set).toHaveBeenCalledWith(SecretKeys.openAiApiKey, 'openai-example-key');
+    expect(remove).toHaveBeenCalledWith(SecretKeys.openAiApiKey);
+  });
 });

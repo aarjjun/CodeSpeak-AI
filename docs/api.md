@@ -8,6 +8,8 @@ This document describes internal TypeScript contracts and public command identif
 | -------------------------------------- | ------------------------------- | ------------------------------------------------- |
 | `codespeak.setApiKey`                  | None                            | Prompts for and securely stores a Gemini key.     |
 | `codespeak.clearApiKey`                | None                            | Confirms and removes the key.                     |
+| `codespeak.setOpenAiApiKey`            | None                            | Prompts for and stores the primary OpenAI key.    |
+| `codespeak.clearOpenAiApiKey`          | None                            | Confirms and removes the primary OpenAI key.      |
 | `codespeak.openFile`                   | Optional file query string      | Opens an accessible file picker or matching file. |
 | `codespeak.goToLine`                   | Optional string or number       | Reveals a one-based line.                         |
 | `codespeak.listDiagnostics`            | None                            | Opens the diagnostics picker.                     |

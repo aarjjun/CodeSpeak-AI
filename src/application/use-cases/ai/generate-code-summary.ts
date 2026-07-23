@@ -89,7 +89,7 @@ export class GenerateCodeSummary {
     }
     if (!this.workspace.isTrusted()) {
       await this.userInterface.showWarning(
-        'Trust this workspace before sending multi-file context to Gemini.',
+        'Trust this workspace before sending multi-file context to the primary AI provider.',
       );
       return undefined;
     }
@@ -102,7 +102,7 @@ export class GenerateCodeSummary {
 
     const confirmed = await this.userInterface.confirm(
       `Summarize this ${scope}? Up to ${MAXIMUM_FILES.toString()} code and documentation files ` +
-        'will be sent to Gemini. Credential, key, dependency, build, and version-control files are excluded.',
+        'will be sent to OpenAI. Credential, key, dependency, build, and version-control files are excluded.',
     );
     if (!confirmed) {
       await this.userInterface.announce('Summary cancelled.');

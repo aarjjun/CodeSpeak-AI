@@ -4,13 +4,16 @@ import * as vscode from 'vscode';
 const EXTENSION_ID = 'codespeak-ai.codespeak-ai';
 
 const EXPECTED_COMMANDS = [
+  'codespeak.accessibility.showControls',
   'codespeak.checkAccessibility',
   'codespeak.clearAccessibilityFindings',
   'codespeak.clearApiKey',
+  'codespeak.clearOpenAiApiKey',
   'codespeak.explainDiagnostic',
   'codespeak.explainSelection',
   'codespeak.generateCode',
   'codespeak.generateDocumentation',
+  'codespeak.focus.toggleView',
   'codespeak.summarizeFile',
   'codespeak.summarizeFolder',
   'codespeak.summarizeWorkspace',
@@ -21,6 +24,7 @@ const EXPECTED_COMMANDS = [
   'codespeak.redo',
   'codespeak.selectAccessibilityProfile',
   'codespeak.setApiKey',
+  'codespeak.setOpenAiApiKey',
   'codespeak.speech.speakSelection',
   'codespeak.speech.stop',
   'codespeak.undo',
@@ -92,6 +96,9 @@ const cases: readonly IntegrationCase[] = [
       assert.equal(configuration.get('accessibilityProfile'), 'custom');
       assert.equal(configuration.get('autoExplainErrors'), false);
       assert.equal(configuration.get('voice.rate'), 1);
+      assert.equal(configuration.get('openaiModel'), 'gpt-5.6-sol');
+      assert.equal(configuration.get('focus.minutes'), 25);
+      assert.equal(configuration.get('focus.breakMinutes'), 5);
     },
   },
 ];

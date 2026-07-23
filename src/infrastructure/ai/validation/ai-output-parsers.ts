@@ -27,7 +27,7 @@ class JsonOutputParser<TOutput> implements AiOutputParser<TOutput> {
       ok: false,
       error: {
         code: 'invalid-response',
-        message: 'Gemini returned a response that CodeSpeak could not safely use.',
+        message: 'The AI provider returned a response that CodeSpeak could not safely use.',
         retryable: true,
         recoveryActions: [],
       },

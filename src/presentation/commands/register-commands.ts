@@ -37,6 +37,8 @@ import { CopilotChatIntegration } from '../integrations/copilot-chat-integration
 import { VoiceFolderController } from '../accessibility/voice-folder-controller';
 import { AudioCueService } from '../../infrastructure/speech/audio-cue-service';
 import { VoiceCommandHelp } from '../accessibility/voice-command-help';
+import { SecretKeys } from '../../config/secrets';
+import { AccessibleControls } from '../accessibility/accessible-controls';
 
 type CommandCallback = (...args: readonly unknown[]) => Promise<void>;
 
@@ -45,6 +47,7 @@ export function registerCommands(
   services: ServiceContainer,
 ): void {
   const apiKey = new ManageApiKey(services.secrets);
+  const openAiApiKey = new ManageApiKey(services.secrets, SecretKeys.openAiApiKey);
   const diagnostics = new NavigateDiagnostics(
     services.diagnostics,
     services.editor,
@@ -152,10 +155,24 @@ export function registerCommands(
     services.userInterface,
   );
   const focusTimer = new FocusTimerController(services.userInterface);
+  const accessibleControls = new AccessibleControls(services.configuration, services.userInterface);
   context.subscriptions.push(voice);
   context.subscriptions.push(focusTimer);
 
   const commands: ReadonlyArray<readonly [string, CommandCallback]> = [
+    [
+      CommandIds.toggleDemoMode,
+      async () => {
+        const configuration = vscode.workspace.getConfiguration('codespeak');
+        const enabled = !configuration.get<boolean>('ai.demoMode', false);
+        await configuration.update('ai.demoMode', enabled, vscode.ConfigurationTarget.Workspace);
+        await accessibleSpeech.speak(
+          enabled
+            ? 'Local demo AI enabled. CodeSpeak will not contact external AI services.'
+            : 'Local demo AI disabled. CodeSpeak will use OpenAI with the configured Gemini fallback.',
+        );
+      },
+    ],
     [
       CommandIds.setApiKey,
       async () => {
@@ -183,6 +200,33 @@ export function registerCommands(
         }
         await apiKey.clear();
         await services.userInterface.showInformation('Gemini API key removed.');
+      },
+    ],
+    [
+      CommandIds.setOpenAiApiKey,
+      async () => {
+        const value = await services.userInterface.requestText('Set OpenAI API key', {
+          password: true,
+          placeHolder: 'Paste your OpenAI API key',
+        });
+        if (value === undefined) return;
+        const result = await openAiApiKey.save(value);
+        if (!result.ok) {
+          await services.userInterface.showWarning(result.error.message);
+          return;
+        }
+        await services.userInterface.showInformation(
+          'OpenAI API key saved securely. OpenAI is the primary AI provider.',
+        );
+      },
+    ],
+    [
+      CommandIds.clearOpenAiApiKey,
+      async () => {
+        const confirmed = await services.userInterface.confirm('Remove the saved OpenAI API key?');
+        if (!confirmed) return;
+        await openAiApiKey.clear();
+        await services.userInterface.showInformation('OpenAI API key removed.');
       },
     ],
     [CommandIds.openFile, async (query) => openFile.execute(asOptionalString(query))],
@@ -285,6 +329,8 @@ export function registerCommands(
     [CommandIds.startFocusTimer, async () => focusTimer.start()],
     [CommandIds.pauseFocusTimer, async () => focusTimer.pause()],
     [CommandIds.resetFocusTimer, async () => focusTimer.reset()],
+    [CommandIds.showAccessibleControls, async () => accessibleControls.show()],
+    [CommandIds.toggleFocusView, async () => accessibleControls.toggleFocusView()],
   ];
 
   for (const [id, callback] of commands) {

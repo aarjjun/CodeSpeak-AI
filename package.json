@@ -23,6 +23,7 @@
     "dyslexia",
     "ADHD",
     "Gemini",
+    "OpenAI",
     "code explanation",
     "WCAG",
     "AST"
@@ -60,8 +61,23 @@
         "category": "CodeSpeak AI"
       },
       {
+        "command": "codespeak.ai.toggleDemoMode",
+        "title": "Enable or Disable Local Demo AI",
+        "category": "CodeSpeak AI"
+      },
+      {
         "command": "codespeak.clearApiKey",
         "title": "Clear Gemini API Key",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.setOpenAiApiKey",
+        "title": "Set OpenAI API Key",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.clearOpenAiApiKey",
+        "title": "Clear OpenAI API Key",
         "category": "CodeSpeak AI"
       },
       {
@@ -152,6 +168,11 @@
       {
         "command": "codespeak.selectAccessibilityProfile",
         "title": "Select Accessibility Profile",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.accessibility.showControls",
+        "title": "Show Accessible Controls",
         "category": "CodeSpeak AI"
       },
       {
@@ -306,6 +327,11 @@
         "command": "codespeak.focus.resetTimer",
         "title": "Reset Focus Timer",
         "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.focus.toggleView",
+        "title": "Toggle Focus View",
+        "category": "CodeSpeak AI"
       }
     ],
     "keybindings": [
@@ -337,7 +363,17 @@
         "codespeak.model": {
           "type": "string",
           "default": "gemini-3.5-flash",
-          "description": "Gemini model used for AI-assisted operations."
+          "description": "Gemini model used only by the optional fallback provider."
+        },
+        "codespeak.openaiModel": {
+          "type": "string",
+          "default": "gpt-5.6-sol",
+          "description": "OpenAI model used for primary AI requests."
+        },
+        "codespeak.ai.demoMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use deterministic local demo responses without contacting OpenAI or Gemini. Demo responses are clearly identified and are not semantic AI analysis."
         },
         "codespeak.voice.language": {
           "type": "string",
@@ -378,10 +414,17 @@
         },
         "codespeak.voice.silenceTimeoutSeconds": {
           "type": "number",
-          "default": 3,
-          "minimum": 2,
+          "default": 1.5,
+          "minimum": 0.5,
+          "maximum": 10,
+          "description": "Seconds of silence after recognized speech before the current utterance is processed."
+        },
+        "codespeak.voice.initialSpeechTimeoutSeconds": {
+          "type": "number",
+          "default": 12,
+          "minimum": 5,
           "maximum": 60,
-          "description": "Seconds of silence before the current utterance is processed."
+          "description": "Seconds to wait for the first recognized speech before stopping the listening session."
         },
         "codespeak.voice.continuousListening": {
           "type": "boolean",
@@ -432,7 +475,21 @@
             "User-defined accessibility behavior."
           ],
           "default": "custom",
-          "description": "Default accessibility behavior profile."
+          "description": "Default accessibility behavior profile. Visual presets are applied to workspace settings and restored when Custom Mode is selected."
+        },
+        "codespeak.focus.minutes": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 120,
+          "default": 25,
+          "description": "Length of an ADHD Mode focus session in minutes."
+        },
+        "codespeak.focus.breakMinutes": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 120,
+          "default": 5,
+          "description": "Length of the break reminder countdown after a focus session."
         },
         "codespeak.autoExplainErrors": {
           "type": "boolean",

@@ -24,7 +24,7 @@ export type VoiceIntentName =
   | 'rename-symbol'
   | 'quick-fix'
   | 'copilot-chat'
-  | 'gemini-chat'
+  | 'ai-chat'
   | 'dictation'
   | 'open-file'
   | 'open-folder'

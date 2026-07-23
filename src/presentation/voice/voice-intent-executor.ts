@@ -82,7 +82,7 @@ export class VoiceIntentExecutor {
       case 'copilot-chat':
         await this.copilot.send(this.stringParameter(intent, 'prompt'));
         return;
-      case 'gemini-chat':
+      case 'ai-chat':
         await vscode.commands.executeCommand(
           CommandIds.askLearningQuestion,
           this.stringParameter(intent, 'prompt'),

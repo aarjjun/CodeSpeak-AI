@@ -10,6 +10,7 @@ function configuration(): ConfigurationGateway {
   return {
     get: () => ({
       model: 'test',
+      openAiModel: 'gpt-5.6-sol',
       voiceLanguage: 'en-US',
       voiceLanguageConfigured: false,
       voiceRate: 1,

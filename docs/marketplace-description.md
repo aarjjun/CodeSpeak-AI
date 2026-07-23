@@ -27,10 +27,11 @@ Every capability is available from the Command Palette. Voice is optional, liste
 ## Requirements
 
 - VS Code 1.98.0 or newer.
-- Gemini API key for AI generation and explanations.
+- OpenAI API key for AI generation and explanations.
+- Optional Gemini API key for fallback requests.
 - Optional Microsoft VS Code Speech extension for voice input.
 
-Deterministic navigation, structural parsing, accessibility checks, profiles, and local speech remain available without Gemini.
+Deterministic navigation, structural parsing, accessibility checks, profiles, and local speech remain available without an AI provider.
 
 ## Preview scope
 

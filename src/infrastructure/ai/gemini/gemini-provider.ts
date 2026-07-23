@@ -3,21 +3,14 @@ import type { AiProvider } from '../../../application/ports/ai/ai-provider';
 import type { PromptRepository } from '../../../application/ports/ai/prompt-repository';
 import type { ConfigurationGateway } from '../../../application/ports/platform/configuration-gateway';
 import type { SecretStore } from '../../../application/ports/persistence/persistence-ports';
-import type {
-  AiContextItem,
-  AiOutputParser,
-  AiRequest,
-  AiResponse,
-} from '../../../domain/ai/ai-contracts';
+import type { AiOutputParser, AiRequest, AiResponse } from '../../../domain/ai/ai-contracts';
 import type { OperationError, OperationResult } from '../../../domain/shared/operation-error';
 import { SecretKeys } from '../../../config/secrets';
 import type { Logger } from '../../../application/ports/platform/logger';
+import { composePromptContents } from '../prompts/compose-prompt-contents';
 
 const SYSTEM_PROMPT_ID = 'system.accessibility';
 const API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
-const MAXIMUM_CONTEXT_ITEMS = 20;
-const MAXIMUM_CONTEXT_CHARACTERS = 80_000;
-const MAXIMUM_ITEM_CHARACTERS = 30_000;
 const MAXIMUM_ATTEMPTS = 2;
 const REQUEST_TIMEOUT_MILLISECONDS = 30_000;
 
@@ -77,7 +70,7 @@ export class GeminiProvider implements AiProvider {
         model,
         apiKey,
         systemTemplate.render({}),
-        this.composeContents(requestTemplate.render(request.input), request.context),
+        composePromptContents(requestTemplate.render(request.input), request.context),
         outputParser.jsonSchema,
         signal,
       );
@@ -199,27 +192,6 @@ export class GeminiProvider implements AiProvider {
     }
 
     throw new GeminiHttpError(503, 'Gemini retry attempts were exhausted.');
-  }
-
-  private composeContents(prompt: string, context: readonly AiContextItem[]): string {
-    const blocks: string[] = [prompt.trim()];
-    let remainingCharacters = MAXIMUM_CONTEXT_CHARACTERS;
-
-    for (const [index, item] of context.slice(0, MAXIMUM_CONTEXT_ITEMS).entries()) {
-      if (remainingCharacters <= 0) {
-        break;
-      }
-      const content = item.content.slice(0, Math.min(MAXIMUM_ITEM_CHARACTERS, remainingCharacters));
-      remainingCharacters -= content.length;
-      blocks.push(
-        [
-          `<codespeak-context index="${(index + 1).toString()}" kind="${item.kind}">`,
-          content,
-          '</codespeak-context>',
-        ].join('\n'),
-      );
-    }
-    return blocks.join('\n\n');
   }
 
   private extractResponseText(payload: unknown): string | undefined {

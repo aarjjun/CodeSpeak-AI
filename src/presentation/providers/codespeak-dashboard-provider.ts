@@ -51,14 +51,34 @@ export class CodeSpeakDashboardProvider
         command: 'codespeak.askLearningQuestion',
       },
       {
+        label: 'Toggle local demo AI',
+        description: 'Use deterministic AI demonstrations without an external API key',
+        command: 'codespeak.ai.toggleDemoMode',
+      },
+      {
+        label: 'Set primary OpenAI key',
+        description: 'Use OpenAI for CodeSpeak generation, explanation, and intent requests',
+        command: 'codespeak.setOpenAiApiKey',
+      },
+      {
         label: 'Check accessibility',
         description: 'Publish deterministic JSX and TSX findings',
         command: 'codespeak.checkAccessibility',
       },
       {
+        label: 'Accessible controls',
+        description: 'Open large, keyboard friendly native controls for common actions',
+        command: 'codespeak.accessibility.showControls',
+      },
+      {
         label: 'Start focus timer',
-        description: 'Begin a 25 minute focus session',
+        description: 'Begin a configurable focus session followed by a break reminder',
         command: 'codespeak.focus.startTimer',
+      },
+      {
+        label: 'Toggle focus view',
+        description: 'Hide distracting VS Code interface regions with Zen Mode',
+        command: 'codespeak.focus.toggleView',
       },
       {
         label: 'Start voice command',

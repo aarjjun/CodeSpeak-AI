@@ -7,6 +7,7 @@ import type {
 
 const SECTION = 'codespeak';
 const DEFAULT_MODEL = 'gemini-3.5-flash';
+const DEFAULT_OPENAI_MODEL = 'gpt-5.6-sol';
 const DEFAULT_LANGUAGE = 'en-US';
 const DEFAULT_RATE = 1;
 const DEFAULT_PROFILE: AccessibilityProfileId = 'custom';
@@ -27,6 +28,7 @@ export class VsCodeConfigurationGateway implements ConfigurationGateway {
 
     return {
       model: configuration.get<string>('model', DEFAULT_MODEL),
+      openAiModel: configuration.get<string>('openaiModel', DEFAULT_OPENAI_MODEL),
       voiceLanguage: configuration.get<string>('voice.language', DEFAULT_LANGUAGE),
       voiceLanguageConfigured: this.isExplicitlyConfigured(configuration, 'voice.language'),
       voiceRate: Math.min(2, Math.max(0.5, configuredRate)),

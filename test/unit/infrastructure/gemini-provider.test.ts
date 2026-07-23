@@ -26,6 +26,7 @@ const prompts: PromptRepository = {
 const configuration: ConfigurationGateway = {
   get: () => ({
     model: 'gemini-3.5-flash',
+    openAiModel: 'gpt-5.6-sol',
     voiceLanguage: 'en-US',
     voiceLanguageConfigured: false,
     voiceRate: 1,

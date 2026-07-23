@@ -5,3 +5,4 @@ coverage
 node_modules
 *.vsix
 LICENSE.txt
+test/blindTest.ts

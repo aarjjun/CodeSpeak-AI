@@ -5,11 +5,13 @@ import type { VoiceIntentResolver } from '../../application/services/voice-inten
 import type { VoiceIntentExecutor } from './voice-intent-executor';
 import type { AudioCueService } from '../../infrastructure/speech/audio-cue-service';
 import type { AccessibleSpeechService } from '../../application/services/accessible-speech-service';
+import { resolveVoiceTiming } from './voice-timing';
 
 const SPEECH_EXTENSION_ID = 'ms-vscode.vscode-speech';
 const START_DICTATION_COMMAND = 'workbench.action.editorDictation.start';
 const STOP_DICTATION_COMMAND = 'workbench.action.editorDictation.stop';
-const DEFAULT_SILENCE_TIMEOUT_SECONDS = 3;
+const DEFAULT_SILENCE_TIMEOUT_SECONDS = 1.5;
+const DEFAULT_INITIAL_SPEECH_TIMEOUT_SECONDS = 12;
 
 type VoiceState = 'idle' | 'listening' | 'processing';
 
@@ -22,10 +24,12 @@ interface PreviousEditorState {
 export class VsCodeDictationController implements vscode.Disposable {
   private readonly statusBarItem: vscode.StatusBarItem;
   private state: VoiceState = 'idle';
+  private commandInProgress = false;
   private continuous = false;
   private voiceDocument: vscode.TextDocument | undefined;
   private previousEditor: PreviousEditorState | undefined;
   private pauseTimer: NodeJS.Timeout | undefined;
+  private initialSpeechTimer: NodeJS.Timeout | undefined;
   private documentChangeSubscription: vscode.Disposable | undefined;
 
   public constructor(
@@ -43,6 +47,10 @@ export class VsCodeDictationController implements vscode.Disposable {
   }
 
   public async toggle(): Promise<void> {
+    if (this.commandInProgress) {
+      await this.speech.speak('CodeSpeak is still completing the previous voice command.');
+      return;
+    }
     if (this.state === 'idle') {
       const settings = vscode.workspace.getConfiguration('codespeak');
       this.continuous =
@@ -57,7 +65,7 @@ export class VsCodeDictationController implements vscode.Disposable {
   }
 
   public async startContinuous(): Promise<void> {
-    if (this.continuous || this.state !== 'idle') {
+    if (this.continuous || this.state !== 'idle' || this.commandInProgress) {
       await this.speech.speak('A CodeSpeak voice session is already active.', 'critical');
       return;
     }
@@ -108,6 +116,10 @@ export class VsCodeDictationController implements vscode.Disposable {
       if (event.document.uri.toString() !== this.voiceDocument?.uri.toString()) {
         return;
       }
+      if (event.document.getText().trim().length === 0) {
+        return;
+      }
+      this.clearInitialSpeechTimer();
       this.scheduleSilenceProcessing();
     });
 
@@ -123,7 +135,7 @@ export class VsCodeDictationController implements vscode.Disposable {
 
     try {
       await vscode.commands.executeCommand(START_DICTATION_COMMAND);
-      this.scheduleSilenceProcessing();
+      this.scheduleInitialSpeechTimeout();
     } catch (error: unknown) {
       this.logger.error('VS Code Speech failed to start dictation.', error);
       this.continuous = false;
@@ -145,15 +157,32 @@ export class VsCodeDictationController implements vscode.Disposable {
     if (this.pauseTimer !== undefined) {
       clearTimeout(this.pauseTimer);
     }
-    const seconds = vscode.workspace
-      .getConfiguration('codespeak')
-      .get<number>('voice.silenceTimeoutSeconds', DEFAULT_SILENCE_TIMEOUT_SECONDS);
-    this.pauseTimer = setTimeout(
-      () => {
-        void this.finishUtterance(true);
-      },
-      Math.max(2, Math.min(60, seconds)) * 1_000,
+    const configuration = vscode.workspace.getConfiguration('codespeak');
+    const timing = resolveVoiceTiming(
+      configuration.get<number>('voice.silenceTimeoutSeconds', DEFAULT_SILENCE_TIMEOUT_SECONDS),
+      configuration.get<number>(
+        'voice.initialSpeechTimeoutSeconds',
+        DEFAULT_INITIAL_SPEECH_TIMEOUT_SECONDS,
+      ),
     );
+    this.pauseTimer = setTimeout(() => {
+      void this.finishUtterance(true);
+    }, timing.silenceTimeoutMilliseconds);
+  }
+
+  private scheduleInitialSpeechTimeout(): void {
+    this.clearInitialSpeechTimer();
+    const configuration = vscode.workspace.getConfiguration('codespeak');
+    const timing = resolveVoiceTiming(
+      configuration.get<number>('voice.silenceTimeoutSeconds', DEFAULT_SILENCE_TIMEOUT_SECONDS),
+      configuration.get<number>(
+        'voice.initialSpeechTimeoutSeconds',
+        DEFAULT_INITIAL_SPEECH_TIMEOUT_SECONDS,
+      ),
+    );
+    this.initialSpeechTimer = setTimeout(() => {
+      void this.finishUtterance(true);
+    }, timing.initialSpeechTimeoutMilliseconds);
   }
 
   private async finishUtterance(execute: boolean): Promise<void> {
@@ -161,41 +190,54 @@ export class VsCodeDictationController implements vscode.Disposable {
       return;
     }
     this.state = 'processing';
+    this.commandInProgress = true;
     this.clearPauseTimer();
+    this.clearInitialSpeechTimer();
     await vscode.commands.executeCommand('setContext', 'codespeak.voiceListening', false);
     await vscode.commands.executeCommand('setContext', 'codespeak.voiceProcessing', true);
     this.renderStatus();
-
-    try {
-      await vscode.commands.executeCommand(STOP_DICTATION_COMMAND);
-    } catch (error: unknown) {
-      this.logger.warn('VS Code Speech stop command was unavailable.', { error: String(error) });
-    }
-    await new Promise<void>((resolve) => setTimeout(resolve, 150));
-
-    const transcript = this.voiceDocument?.getText().trim() ?? '';
-    await this.closeVoiceDocument();
-    await this.restorePreviousEditor();
-
-    if (execute && transcript.length > 0) {
-      this.audioCues.play('recognized');
-      await this.userInterface.announce(`Recognized: ${transcript}`);
-      await this.executor.execute(await this.resolver.resolve(transcript), transcript);
-      this.audioCues.play('completed');
-    } else if (execute) {
-      this.audioCues.play('failed');
-      await this.speech.speak(
-        'No speech was recognized. Check the microphone and try again.',
-        'critical',
-      );
-      await this.userInterface.showWarning('No speech was recognized.');
-    }
+    await this.markIdle(true);
 
     const restart = this.continuous;
-    this.state = 'idle';
-    await vscode.commands.executeCommand('setContext', 'codespeak.voiceListening', false);
-    await vscode.commands.executeCommand('setContext', 'codespeak.voiceProcessing', false);
-    this.renderStatus();
+    try {
+      try {
+        await vscode.commands.executeCommand(STOP_DICTATION_COMMAND);
+      } catch (error: unknown) {
+        this.logger.warn('VS Code Speech stop command was unavailable.', { error: String(error) });
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 75));
+
+      const transcript = this.voiceDocument?.getText().trim() ?? '';
+      await this.closeVoiceDocument();
+      await this.restorePreviousEditor();
+      await this.markIdle(true);
+
+      if (execute && transcript.length > 0) {
+        this.audioCues.play('recognized');
+        await this.userInterface.announce(`Recognized: ${transcript}`);
+        await this.executor.execute(await this.resolver.resolve(transcript), transcript);
+        this.audioCues.play('completed');
+      } else if (execute) {
+        this.audioCues.play('failed');
+        await this.speech.speak(
+          'No speech was recognized. Check the microphone and try again.',
+          'critical',
+        );
+        await this.userInterface.showWarning('No speech was recognized.');
+      }
+    } catch (error: unknown) {
+      this.audioCues.play('failed');
+      this.logger.error('Voice command processing failed.', error);
+      await this.speech.speak(
+        'The voice command could not be completed. Try again or use the typed voice command test.',
+        'critical',
+      );
+    } finally {
+      await this.closeVoiceDocument();
+      await this.restorePreviousEditor();
+      this.commandInProgress = false;
+      await this.markIdle();
+    }
     if (restart) {
       await this.start();
     } else {
@@ -206,6 +248,7 @@ export class VsCodeDictationController implements vscode.Disposable {
 
   private async cancelCurrentSession(message: string): Promise<void> {
     this.clearPauseTimer();
+    this.clearInitialSpeechTimer();
     if (this.state === 'listening') {
       try {
         await vscode.commands.executeCommand(STOP_DICTATION_COMMAND);
@@ -274,6 +317,23 @@ export class VsCodeDictationController implements vscode.Disposable {
     }
   }
 
+  private clearInitialSpeechTimer(): void {
+    if (this.initialSpeechTimer !== undefined) {
+      clearTimeout(this.initialSpeechTimer);
+      this.initialSpeechTimer = undefined;
+    }
+  }
+
+  private async markIdle(keepCommandInProgress = false): Promise<void> {
+    this.state = 'idle';
+    if (!keepCommandInProgress) {
+      this.commandInProgress = false;
+    }
+    await vscode.commands.executeCommand('setContext', 'codespeak.voiceListening', false);
+    await vscode.commands.executeCommand('setContext', 'codespeak.voiceProcessing', false);
+    this.renderStatus();
+  }
+
   private renderStatus(): void {
     if (this.state === 'listening') {
       this.statusBarItem.text = '$(mic-filled) CodeSpeak listening';
@@ -301,6 +361,7 @@ export class VsCodeDictationController implements vscode.Disposable {
 
   public dispose(): void {
     this.clearPauseTimer();
+    this.clearInitialSpeechTimer();
     this.documentChangeSubscription?.dispose();
     this.statusBarItem.dispose();
   }
