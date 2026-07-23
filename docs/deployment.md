@@ -4,8 +4,8 @@
 
 Before the first public release, the owner must finalize:
 
-- The Visual Studio Marketplace publisher ID. `package.json` currently uses `codespeak-ai`; confirm that this publisher exists and is controlled by the project owner.
-- The public repository URL, homepage, issue tracker, and private security contact.
+- The Visual Studio Marketplace publisher ID is `arjunanoop`; confirm that the project owner retains access to this publisher.
+- The public repository, homepage, and issue tracker are declared in `package.json`.
 - Whether the proprietary `LICENSE.txt` should remain or be replaced with an approved open-source/commercial license.
 - Marketplace privacy-policy and support URLs if required by the publisher account.
 - Automated publishing identity. Prefer Microsoft Entra ID for new automation; Microsoft has announced retirement of global Azure DevOps PATs on December 1, 2026.
@@ -48,7 +48,7 @@ Confirm that source tests, coverage reports, development scripts, `.vscode-test`
 After publisher ownership and authentication are configured:
 
 ```sh
-npx vsce login <confirmed-publisher-id>
+npx vsce login arjunanoop
 npx vsce publish
 ```
 

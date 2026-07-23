@@ -4,8 +4,16 @@
   "description": "The AI-powered accessibility assistant for developers.",
   "version": "0.2.0",
   "private": true,
-  "publisher": "codespeak-ai",
+  "publisher": "arjunanoop",
   "license": "SEE LICENSE IN LICENSE.txt",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aarjjun/CodeSpeak-AI.git"
+  },
+  "homepage": "https://github.com/aarjjun/CodeSpeak-AI#readme",
+  "bugs": {
+    "url": "https://github.com/aarjjun/CodeSpeak-AI/issues"
+  },
   "preview": true,
   "pricing": "Free",
   "icon": "resources/codespeak-icon.png",
@@ -517,7 +525,7 @@
     "test:all": "npm run test && npm run test:integration",
     "test:coverage": "node scripts/run-coverage.mjs",
     "verify": "npm audit --audit-level=high && npm run check-types && npm run lint && npm run format:check && npm run test:coverage",
-    "package": "vsce package --allow-missing-repository",
+    "package": "vsce package",
     "release:check": "npm run verify && npm run test:integration && npm run package"
   },
   "devDependencies": {
