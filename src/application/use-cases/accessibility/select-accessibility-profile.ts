@@ -33,13 +33,13 @@ export class SelectAccessibilityProfile {
       case 'blind':
         return 'Voice-first summaries, spoken progress, and screen-reader-oriented navigation.';
       case 'low-vision':
-        return 'Clear visual presentation with optional spoken support.';
+        return 'Larger text, stronger cursor and line focus, reduced motion, and simplified editor chrome.';
       case 'dyslexia':
-        return 'Shorter explanations, structured reading order, and bracket highlighting.';
+        return 'Readable font fallback, wider spacing, wrapped lines, colored brackets, and brief explanations.';
       case 'motor':
-        return 'Stronger confirmation and reduced precision requirements.';
+        return 'Larger interface scale, wide cursor, voice support, native controls, and stronger confirmation.';
       case 'adhd':
-        return 'Brief grouped information, reduced distraction, and active-line focus highlighting.';
+        return 'Active block focus, reduced editor distractions, Focus View, and configurable timers.';
       case 'custom':
         return 'Neutral defaults controlled by individual settings.';
     }

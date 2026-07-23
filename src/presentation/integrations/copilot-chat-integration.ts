@@ -10,7 +10,7 @@ export class CopilotChatIntegration {
     const extension = vscode.extensions.getExtension(COPILOT_CHAT_EXTENSION_ID);
     if (extension === undefined) {
       await this.speech.speak(
-        'GitHub Copilot Chat is not installed. The request was not sent to Gemini.',
+        'GitHub Copilot Chat is not installed. The request was not sent to another AI provider.',
         'critical',
       );
       return;

@@ -36,7 +36,7 @@ export class LocalDemoAiProvider implements AiProvider {
           ],
           whyItWorks:
             'The response is generated locally and validated with the normal output schema.',
-          alternatives: ['Disable demo mode to request a live Gemini explanation.'],
+          alternatives: ['Disable demo mode to request a live OpenAI explanation.'],
           considerations: ['Demo mode does not perform semantic code analysis.'],
         };
       case 'diagnostic.explain':
@@ -64,7 +64,7 @@ export class LocalDemoAiProvider implements AiProvider {
           architecture: ['Editor context flows through the CodeSpeak application services.'],
           importantFiles: [],
           entryPoints: [],
-          cautions: ['Enable live Gemini mode for semantic project analysis.'],
+          cautions: ['Enable live OpenAI mode for semantic project analysis.'],
         };
       case 'voice.classify':
         return { category: 'unknown', content: request.input['transcript'] ?? '' };
@@ -88,7 +88,7 @@ export class LocalDemoAiProvider implements AiProvider {
     }
     return {
       explanation: `Demo mode received the question: ${question}. This local response confirms that the learning workflow is available.`,
-      example: 'Disable demo mode and configure Gemini to receive a live generated example.',
+      example: 'Disable demo mode and configure OpenAI to receive a live generated example.',
       exercise: 'Explain the concept in one sentence and create one small example.',
       feedback:
         'A strong answer defines the concept, gives an example, and mentions an important limitation.',

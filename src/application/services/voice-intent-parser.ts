@@ -103,17 +103,39 @@ export class VoiceIntentParser {
       return this.intent('copilot-chat', { prompt: '' });
     }
 
+    const openAi = normalized.match(/^(?:ask|tell) (?:open ai|openai)(?: to)? (.+)$/u);
+    if (openAi?.[1] !== undefined) {
+      return this.intent('ai-chat', { prompt: openAi[1] });
+    }
+    const sendToOpenAi = normalized.match(/^send (.+) to (?:open ai|openai)$/u);
+    if (sendToOpenAi?.[1] !== undefined) {
+      return this.intent('ai-chat', { prompt: sendToOpenAi[1] });
+    }
+    const useOpenAi = normalized.match(/^use (?:open ai|openai) to (.+)$/u);
+    if (useOpenAi?.[1] !== undefined) {
+      return this.intent('ai-chat', { prompt: useOpenAi[1] });
+    }
+    if (
+      normalized === 'ask open ai' ||
+      normalized === 'ask openai' ||
+      normalized === 'open open ai'
+    ) {
+      return this.intent('codespeak-command', {
+        commandId: 'codespeak.askLearningQuestion',
+      });
+    }
+
     const gemini = normalized.match(/^(?:ask|tell) gemini(?: to)? (.+)$/u);
     if (gemini?.[1] !== undefined) {
-      return this.intent('gemini-chat', { prompt: gemini[1] });
+      return this.intent('ai-chat', { prompt: gemini[1] });
     }
     const sendToGemini = normalized.match(/^send (.+) to gemini$/u);
     if (sendToGemini?.[1] !== undefined) {
-      return this.intent('gemini-chat', { prompt: sendToGemini[1] });
+      return this.intent('ai-chat', { prompt: sendToGemini[1] });
     }
     const useGemini = normalized.match(/^use gemini to (.+)$/u);
     if (useGemini?.[1] !== undefined) {
-      return this.intent('gemini-chat', { prompt: useGemini[1] });
+      return this.intent('ai-chat', { prompt: useGemini[1] });
     }
     if (normalized === 'ask gemini' || normalized === 'open gemini') {
       return this.intent('codespeak-command', {

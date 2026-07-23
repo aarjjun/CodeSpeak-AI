@@ -2,6 +2,7 @@ import type { AccessibilityProfileId } from '../../../domain/accessibility/acces
 
 export interface CodeSpeakConfiguration {
   readonly model: string;
+  readonly openAiModel: string;
   readonly voiceLanguage: string;
   readonly voiceLanguageConfigured: boolean;
   readonly voiceRate: number;

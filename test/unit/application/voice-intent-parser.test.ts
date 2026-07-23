@@ -54,10 +54,13 @@ describe('VoiceIntentParser', () => {
     ['type hello world', 'dictation', { text: 'hello world' }],
     ['open the folder', 'codespeak-command', { commandId: 'codespeak.openFolder' }],
     ['ask copilot to refactor this function', 'copilot-chat', { prompt: 'refactor this function' }],
-    ['ask gemini what is recursion', 'gemini-chat', { prompt: 'what is recursion' }],
+    ['ask open ai what is recursion', 'ai-chat', { prompt: 'what is recursion' }],
+    ['use openai to explain closures', 'ai-chat', { prompt: 'explain closures' }],
+    ['send this question to open ai', 'ai-chat', { prompt: 'this question' }],
+    ['ask gemini what is recursion', 'ai-chat', { prompt: 'what is recursion' }],
     ['ask gemini', 'codespeak-command', { commandId: 'codespeak.askLearningQuestion' }],
-    ['use gemini to explain closures', 'gemini-chat', { prompt: 'explain closures' }],
-    ['send this question to gemini', 'gemini-chat', { prompt: 'this question' }],
+    ['use gemini to explain closures', 'ai-chat', { prompt: 'explain closures' }],
+    ['send this question to gemini', 'ai-chat', { prompt: 'this question' }],
     ['code speak summarize file', 'codespeak-command', { commandId: 'codespeak.summarizeFile' }],
   ] as const)('classifies Blind Mode phrase %s', (transcript, name, parameters) => {
     expect(parser.parse(transcript)).toMatchObject({ name, parameters });

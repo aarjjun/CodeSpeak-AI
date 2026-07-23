@@ -28,14 +28,14 @@ export class GenerateCode {
 
     const instruction =
       initialInstruction ??
-      (await this.userInterface.requestText('Generate code with Gemini', {
+      (await this.userInterface.requestText('Generate code with OpenAI', {
         placeHolder: 'Describe the code you want to create',
       }));
     if (instruction === undefined) {
       return;
     }
     if (instruction.trim().length === 0) {
-      await this.userInterface.showWarning('Describe the code you want Gemini to generate.');
+      await this.userInterface.showWarning('Describe the code you want OpenAI to generate.');
       return;
     }
 

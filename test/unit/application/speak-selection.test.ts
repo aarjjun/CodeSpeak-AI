@@ -11,6 +11,7 @@ function profiles(): AccessibilityProfileService {
   const configuration: ConfigurationGateway = {
     get: () => ({
       model: 'gemini-3.5-flash',
+      openAiModel: 'gpt-5.6-sol',
       voiceLanguage: 'en-IN',
       voiceLanguageConfigured: true,
       voiceRate: 1.25,

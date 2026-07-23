@@ -13,6 +13,15 @@ export interface CodeSpeakCommandDefinition {
 
 export const CODE_SPEAK_COMMANDS: readonly CodeSpeakCommandDefinition[] = [
   definition(
+    CommandIds.showAccessibleControls,
+    'Show accessible controls',
+    ['show accessible controls', 'open accessible controls', 'show motor controls'],
+    'Choose common CodeSpeak actions from a native accessible picker.',
+    false,
+    false,
+    true,
+  ),
+  definition(
     CommandIds.explainSelection,
     'Explain selected code',
     ['explain selected code', 'what does this selection do', 'explain it'],
@@ -200,6 +209,15 @@ export const CODE_SPEAK_COMMANDS: readonly CodeSpeakCommandDefinition[] = [
     true,
   ),
   definition(
+    CommandIds.toggleFocusView,
+    'Toggle focus view',
+    ['toggle focus view', 'enter focus view', 'exit focus view', 'hide distractions'],
+    'Toggle the distraction reducing VS Code Zen Mode layout.',
+    false,
+    false,
+    true,
+  ),
+  definition(
     CommandIds.askLearningQuestion,
     'Ask a learning question',
     ['ask a learning question'],
@@ -213,6 +231,16 @@ export const CODE_SPEAK_COMMANDS: readonly CodeSpeakCommandDefinition[] = [
     'Clear Gemini API key',
     ['clear gemini api key'],
     'Remove the stored Gemini key.',
+    false,
+    false,
+    true,
+    true,
+  ),
+  definition(
+    CommandIds.clearOpenAiApiKey,
+    'Clear OpenAI API key',
+    ['clear open ai api key', 'clear openai api key'],
+    'Remove the stored primary OpenAI key.',
     false,
     false,
     true,
@@ -358,6 +386,15 @@ export const CODE_SPEAK_COMMANDS: readonly CodeSpeakCommandDefinition[] = [
     true,
   ),
   definition(
+    CommandIds.setOpenAiApiKey,
+    'Set OpenAI API key',
+    ['set open ai api key', 'set openai api key'],
+    'Store the primary OpenAI key securely.',
+    false,
+    false,
+    true,
+  ),
+  definition(
     CommandIds.speakSelection,
     'Read selection aloud',
     ['speak selection'],
@@ -424,7 +461,7 @@ export const CODE_SPEAK_COMMANDS: readonly CodeSpeakCommandDefinition[] = [
     CommandIds.toggleDemoMode,
     'Toggle local demo AI',
     ['toggle local demo ai', 'enable demo mode', 'disable demo mode'],
-    'Switch between deterministic local demo responses and the configured Gemini service.',
+    'Switch between deterministic local responses and the configured live AI services.',
     false,
     false,
     true,

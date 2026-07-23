@@ -1,21 +1,19 @@
-import { setTimeout as delay } from 'node:timers/promises';
 import type { AiProvider } from '../../../application/ports/ai/ai-provider';
 import type { PromptRepository } from '../../../application/ports/ai/prompt-repository';
 import type { ConfigurationGateway } from '../../../application/ports/platform/configuration-gateway';
+import type { Logger } from '../../../application/ports/platform/logger';
 import type { SecretStore } from '../../../application/ports/persistence/persistence-ports';
+import { SecretKeys } from '../../../config/secrets';
 import type { AiOutputParser, AiRequest, AiResponse } from '../../../domain/ai/ai-contracts';
 import type { OperationError, OperationResult } from '../../../domain/shared/operation-error';
-import { SecretKeys } from '../../../config/secrets';
-import type { Logger } from '../../../application/ports/platform/logger';
 import { composePromptContents } from '../prompts/compose-prompt-contents';
 
 const SYSTEM_PROMPT_ID = 'system.accessibility';
-const API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
-const MAXIMUM_ATTEMPTS = 2;
-const REQUEST_TIMEOUT_MILLISECONDS = 30_000;
+const API_URL = 'https://api.openai.com/v1/responses';
+const REQUEST_TIMEOUT_MILLISECONDS = 60_000;
 
-export class GeminiProvider implements AiProvider {
-  public readonly id = 'gemini';
+export class OpenAiProvider implements AiProvider {
+  public readonly id = 'openai';
 
   public constructor(
     private readonly secrets: SecretStore,
@@ -30,22 +28,22 @@ export class GeminiProvider implements AiProvider {
     signal?: AbortSignal,
   ): Promise<OperationResult<AiResponse<TOutput>>> {
     if (signal?.aborted === true) {
-      return this.failure('cancelled', 'The Gemini request was cancelled.', true);
+      return this.failure('cancelled', 'The OpenAI request was cancelled.', true);
     }
 
-    const apiKey = await this.secrets.get(SecretKeys.geminiApiKey);
+    const apiKey = await this.secrets.get(SecretKeys.openAiApiKey);
     if (apiKey === undefined || apiKey.trim().length === 0) {
       return {
         ok: false,
         error: {
           code: 'configuration',
-          message: 'Set a Gemini API key before using AI features.',
+          message: 'Set an OpenAI API key before using the primary AI service.',
           retryable: true,
           recoveryActions: [
             {
-              id: 'set-api-key',
-              label: 'Set Gemini API Key',
-              commandId: 'codespeak.setApiKey',
+              id: 'set-openai-api-key',
+              label: 'Set OpenAI API Key',
+              commandId: 'codespeak.setOpenAiApiKey',
             },
           ],
         },
@@ -65,20 +63,21 @@ export class GeminiProvider implements AiProvider {
         );
       }
 
-      const model = request.model ?? this.configuration.get().model;
-      const payload = await this.requestGemini(
-        model,
+      const model = this.configuration.get().openAiModel;
+      const response = await this.requestOpenAi(
         apiKey,
+        model,
         systemTemplate.render({}),
         composePromptContents(requestTemplate.render(request.input), request.context),
+        request.capability,
         outputParser.jsonSchema,
         signal,
       );
-      const responseText = this.extractResponseText(payload);
+      const responseText = this.extractResponseText(response);
       if (responseText === undefined || responseText.trim().length === 0) {
         return this.failure(
           'invalid-response',
-          'Gemini returned an empty response. Try the request again.',
+          'OpenAI returned an empty or refused response.',
           true,
         );
       }
@@ -89,132 +88,112 @@ export class GeminiProvider implements AiProvider {
       } catch {
         return this.failure(
           'invalid-response',
-          'Gemini returned a response that CodeSpeak could not read safely.',
+          'OpenAI returned a response that CodeSpeak could not read safely.',
           true,
         );
       }
 
       const parsedOutput = outputParser.parse(parsedJson);
       if (!parsedOutput.ok) {
-        return parsedOutput;
+        return {
+          ok: false,
+          error: {
+            ...parsedOutput.error,
+            message: 'OpenAI returned a response that CodeSpeak could not safely use.',
+          },
+        };
       }
 
-      const usage = this.extractUsage(payload);
+      const usage = this.extractUsage(response);
       return {
         ok: true,
         value: {
           output: parsedOutput.value,
-          model: this.getString(payload, 'modelVersion') ?? model,
+          model: this.getString(response, 'model') ?? model,
           ...(usage === undefined ? {} : { usage }),
         },
       };
     } catch (error: unknown) {
       const mappedError = this.mapError(error, signal);
-      this.logger?.error('Gemini request failed.', error, {
+      this.logger?.error('OpenAI request failed.', error, {
         capability: request.capability,
-        model: request.model ?? this.configuration.get().model,
+        model: this.configuration.get().openAiModel,
         errorCode: mappedError.code,
         retryable: mappedError.retryable,
-        ...(error instanceof GeminiHttpError ? { httpStatus: error.status } : {}),
+        ...(error instanceof OpenAiHttpError ? { httpStatus: error.status } : {}),
       });
       return { ok: false, error: mappedError };
     }
   }
 
-  private async requestGemini(
-    model: string,
+  private async requestOpenAi(
     apiKey: string,
+    model: string,
     systemInstruction: string,
     contents: string,
+    capability: AiRequest['capability'],
     responseJsonSchema: Readonly<Record<string, unknown>>,
     signal?: AbortSignal,
   ): Promise<unknown> {
-    const normalizedModel = model.replace(/^models\//u, '').trim();
+    const normalizedModel = model.trim();
     if (normalizedModel.length === 0) {
-      throw new GeminiHttpError(400, 'The configured model name is empty.');
+      throw new OpenAiHttpError(400, 'The configured OpenAI model name is empty.');
     }
-    const url = `${API_BASE_URL}/${encodeURIComponent(normalizedModel)}:generateContent`;
-    const body = JSON.stringify({
-      systemInstruction: { parts: [{ text: systemInstruction }] },
-      contents: [{ role: 'user', parts: [{ text: contents }] }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseJsonSchema,
-        temperature: 0.2,
-        maxOutputTokens: 8_192,
+    const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MILLISECONDS);
+    const requestSignal =
+      signal === undefined ? timeoutSignal : AbortSignal.any([signal, timeoutSignal]);
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
-      store: false,
-    });
-
-    for (let attempt = 1; attempt <= MAXIMUM_ATTEMPTS; attempt += 1) {
-      try {
-        const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MILLISECONDS);
-        const requestSignal =
-          signal === undefined ? timeoutSignal : AbortSignal.any([signal, timeoutSignal]);
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey,
+      body: JSON.stringify({
+        model: normalizedModel,
+        input: [
+          { role: 'system', content: systemInstruction },
+          { role: 'user', content: contents },
+        ],
+        text: {
+          format: {
+            type: 'json_schema',
+            name: `codespeak_${capability.replaceAll('-', '_')}`,
+            schema: responseJsonSchema,
+            strict: true,
           },
-          body,
-          signal: requestSignal,
-        });
-        if (response.ok) {
-          return await response.json();
-        }
-
-        const technicalMessage = (await response.text()).slice(0, 2_000);
-        if (!this.isRetryableStatus(response.status) || attempt === MAXIMUM_ATTEMPTS) {
-          throw new GeminiHttpError(response.status, technicalMessage);
-        }
-      } catch (error: unknown) {
-        if (signal?.aborted === true || (error instanceof Error && error.name === 'AbortError')) {
-          throw error;
-        }
-        if (
-          error instanceof GeminiHttpError &&
-          (!this.isRetryableStatus(error.status) || attempt === MAXIMUM_ATTEMPTS)
-        ) {
-          throw error;
-        }
-        if (attempt === MAXIMUM_ATTEMPTS) {
-          throw error;
-        }
-      }
-
-      const backoffMilliseconds = 500 * 2 ** (attempt - 1) + Math.floor(Math.random() * 250);
-      if (signal === undefined) {
-        await delay(backoffMilliseconds);
-      } else {
-        await delay(backoffMilliseconds, undefined, { signal });
-      }
+        },
+        max_output_tokens: 8_192,
+        store: false,
+      }),
+      signal: requestSignal,
+    });
+    if (!response.ok) {
+      throw new OpenAiHttpError(response.status, (await response.text()).slice(0, 2_000));
     }
-
-    throw new GeminiHttpError(503, 'Gemini retry attempts were exhausted.');
+    return response.json();
   }
 
   private extractResponseText(payload: unknown): string | undefined {
-    const candidates = this.getArray(payload, 'candidates');
-    const candidate = candidates?.[0];
-    const content = this.getRecord(candidate, 'content');
-    const parts = this.getArray(content, 'parts');
-    return parts
-      ?.map((part) => this.getString(part, 'text'))
-      .filter((text): text is string => text !== undefined)
-      .join('');
+    const output = this.getArray(payload, 'output');
+    for (const item of output ?? []) {
+      if (this.getString(item, 'type') !== 'message') continue;
+      for (const content of this.getArray(item, 'content') ?? []) {
+        if (this.getString(content, 'type') === 'output_text') {
+          return this.getString(content, 'text');
+        }
+        if (this.getString(content, 'type') === 'refusal') {
+          return undefined;
+        }
+      }
+    }
+    return undefined;
   }
 
   private extractUsage(payload: unknown): AiResponse<unknown>['usage'] | undefined {
-    const metadata = this.getRecord(payload, 'usageMetadata');
-    if (metadata === undefined) {
-      return undefined;
-    }
-    const inputTokens = this.getNumber(metadata, 'promptTokenCount');
-    const outputTokens = this.getNumber(metadata, 'candidatesTokenCount');
-    if (inputTokens === undefined && outputTokens === undefined) {
-      return undefined;
-    }
+    const usage = this.getRecord(payload, 'usage');
+    const inputTokens = this.getNumber(usage, 'input_tokens');
+    const outputTokens = this.getNumber(usage, 'output_tokens');
+    if (inputTokens === undefined && outputTokens === undefined) return undefined;
     return {
       ...(inputTokens === undefined ? {} : { inputTokens }),
       ...(outputTokens === undefined ? {} : { outputTokens }),
@@ -222,9 +201,7 @@ export class GeminiProvider implements AiProvider {
   }
 
   private getRecord(value: unknown, key: string): Readonly<Record<string, unknown>> | undefined {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-      return undefined;
-    }
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;
     const nested = (value as Readonly<Record<string, unknown>>)[key];
     return typeof nested === 'object' && nested !== null && !Array.isArray(nested)
       ? (nested as Readonly<Record<string, unknown>>)
@@ -232,53 +209,43 @@ export class GeminiProvider implements AiProvider {
   }
 
   private getArray(value: unknown, key: string): readonly unknown[] | undefined {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-      return undefined;
-    }
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;
     const nested = (value as Readonly<Record<string, unknown>>)[key];
     return Array.isArray(nested) ? nested : undefined;
   }
 
   private getString(value: unknown, key: string): string | undefined {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-      return undefined;
-    }
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;
     const nested = (value as Readonly<Record<string, unknown>>)[key];
     return typeof nested === 'string' ? nested : undefined;
   }
 
   private getNumber(value: unknown, key: string): number | undefined {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-      return undefined;
-    }
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;
     const nested = (value as Readonly<Record<string, unknown>>)[key];
     return typeof nested === 'number' ? nested : undefined;
-  }
-
-  private isRetryableStatus(status: number): boolean {
-    return status === 408 || status >= 500;
   }
 
   private mapError(error: unknown, signal?: AbortSignal): OperationError {
     if (signal?.aborted === true || (error instanceof Error && error.name === 'AbortError')) {
       return {
         code: 'cancelled',
-        message: 'The Gemini request was cancelled.',
+        message: 'The OpenAI request was cancelled.',
         retryable: true,
         recoveryActions: [],
       };
     }
-    if (error instanceof GeminiHttpError) {
+    if (error instanceof OpenAiHttpError) {
       if (error.status === 401 || error.status === 403) {
         return {
           code: 'authentication',
-          message: 'Gemini rejected the saved API key. Check or replace the key.',
+          message: 'OpenAI rejected the saved API key. Check or replace the key.',
           retryable: true,
           recoveryActions: [
             {
-              id: 'set-api-key',
-              label: 'Set Gemini API Key',
-              commandId: 'codespeak.setApiKey',
+              id: 'set-openai-api-key',
+              label: 'Set OpenAI API Key',
+              commandId: 'codespeak.setOpenAiApiKey',
             },
           ],
         };
@@ -286,25 +253,16 @@ export class GeminiProvider implements AiProvider {
       if (error.status === 429) {
         return {
           code: 'rate-limited',
-          message: 'The Gemini rate limit was reached. Wait briefly and try again.',
+          message: 'The OpenAI rate limit was reached. Wait briefly and try again.',
           technicalMessage: error.message,
           retryable: true,
           recoveryActions: [],
         };
       }
-      if (error.status === 408) {
+      if (error.status === 408 || error.status >= 500) {
         return {
           code: 'provider-unavailable',
-          message: 'The Gemini request timed out. Try again with a smaller request.',
-          technicalMessage: error.message,
-          retryable: true,
-          recoveryActions: [],
-        };
-      }
-      if (error.status >= 500) {
-        return {
-          code: 'provider-unavailable',
-          message: `Gemini is temporarily unavailable. The service returned HTTP ${String(error.status)}. Try again shortly.`,
+          message: 'OpenAI is temporarily unavailable. Try again shortly.',
           technicalMessage: error.message,
           retryable: true,
           recoveryActions: [],
@@ -312,7 +270,7 @@ export class GeminiProvider implements AiProvider {
       }
       return {
         code: 'provider-unavailable',
-        message: 'Gemini could not complete the request. Check the selected model and try again.',
+        message: 'OpenAI could not complete the request. Check the selected model and try again.',
         technicalMessage: error.message,
         retryable: false,
         recoveryActions: [],
@@ -321,7 +279,7 @@ export class GeminiProvider implements AiProvider {
     if (error instanceof TypeError) {
       return {
         code: 'network-unavailable',
-        message: 'CodeSpeak could not reach Gemini. Check your internet connection.',
+        message: 'CodeSpeak could not reach OpenAI. Check your internet connection.',
         technicalMessage: error.message,
         retryable: true,
         recoveryActions: [],
@@ -330,7 +288,7 @@ export class GeminiProvider implements AiProvider {
     if (error instanceof Error && error.name === 'TimeoutError') {
       return {
         code: 'provider-unavailable',
-        message: 'The Gemini request timed out. Try again with a smaller selection.',
+        message: 'The OpenAI request timed out. Try again with a smaller selection.',
         technicalMessage: error.message,
         retryable: true,
         recoveryActions: [],
@@ -338,7 +296,7 @@ export class GeminiProvider implements AiProvider {
     }
     return {
       code: 'unexpected',
-      message: 'An unexpected error occurred while contacting Gemini.',
+      message: 'An unexpected error occurred while contacting OpenAI.',
       ...(error instanceof Error ? { technicalMessage: error.message } : {}),
       retryable: true,
       recoveryActions: [],
@@ -357,12 +315,12 @@ export class GeminiProvider implements AiProvider {
   }
 }
 
-class GeminiHttpError extends Error {
+class OpenAiHttpError extends Error {
   public constructor(
     public readonly status: number,
     message: string,
   ) {
     super(message);
-    this.name = 'GeminiHttpError';
+    this.name = 'OpenAiHttpError';
   }
 }

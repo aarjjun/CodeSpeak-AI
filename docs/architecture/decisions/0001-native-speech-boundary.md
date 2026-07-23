@@ -11,7 +11,7 @@ VS Code's stable extension API does not expose raw microphone capture. Extension
 
 CodeSpeak delegates microphone access and local speech recognition to Microsoft's optional VS Code Speech extension through its documented editor-dictation commands. CodeSpeak reads the resulting transient text, maps it through a typed allowlist, and then executes only CodeSpeak-owned intents.
 
-The transient dictation document is closed after each utterance. Audio is processed locally by VS Code Speech and is not sent to Gemini. Only a recognized textual instruction reaches Gemini when the user confirms an AI-backed command such as code generation.
+The transient dictation document is closed after each utterance. Audio is processed locally by VS Code Speech and is not sent to an AI provider. Only a recognized textual instruction reaches OpenAI, or the announced Gemini fallback, when the user confirms an AI-backed command such as code generation.
 
 Speech output uses capability-detected desktop services: System.Speech on Windows, `say` on macOS, and Speech Dispatcher on Linux. Screen-reader announcements remain available independently of speech output.
 
