@@ -1,6 +1,6 @@
 # CodeSpeak AI support
 
-CodeSpeak AI `0.2.0` is a preview release. Before reporting a problem:
+CodeSpeak AI `0.2.1` is a preview release. Before reporting a problem:
 
 1. Update to a supported VS Code version (`1.98.0` or newer).
 2. Run **Developer: Show Running Extensions** and confirm CodeSpeak AI is active.

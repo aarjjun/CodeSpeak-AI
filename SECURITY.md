@@ -20,7 +20,7 @@ The repository will publish a dedicated private security-reporting address befor
 - Generated edits require preview or confirmation.
 - Voice audio is processed by the optional Microsoft VS Code Speech extension; CodeSpeak consumes transcript text.
 - Workspace text is included only in explicitly invoked operations and is bounded by the relevant command context.
-- No telemetry is collected by CodeSpeak AI `0.2.0`.
+- No telemetry is collected by CodeSpeak AI `0.2.1`.
 
 ## Dependency policy
 
