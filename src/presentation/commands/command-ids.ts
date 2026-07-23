@@ -1,4 +1,5 @@
 export const CommandIds = {
+  toggleDemoMode: 'codespeak.ai.toggleDemoMode',
   askCopilot: 'codespeak.copilot.ask',
   askLearningQuestion: 'codespeak.askLearningQuestion',
   checkAccessibility: 'codespeak.checkAccessibility',

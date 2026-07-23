@@ -1,7 +1,9 @@
 .git/**
 .gitignore
 .github/**
+AI
 .vscode/**
+.vscode-test/**
 .prettierignore
 .prettierrc.json
 coverage/**

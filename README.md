@@ -46,6 +46,8 @@ For voice input, install VS Code Speech and press `Ctrl+Alt+Space` on Windows/Li
 
 To test the complete Blind Mode command pipeline without a microphone, run **CodeSpeak AI: Enter Voice Command as Text** and enter the phrase you want to simulate.
 
+For an offline presentation, run **CodeSpeak AI: Enable or Disable Local Demo AI**. Demo mode uses clearly identified deterministic responses, does not require an API key, and does not contact Gemini. Disable it to restore live Gemini requests.
+
 ## Commands
 
 | Command                                   | Purpose                                                       |
@@ -82,7 +84,9 @@ All commands are available through the keyboard-accessible Command Palette. Voic
 | `codespeak.voice.volume`                          | `100`              | Speech output volume from zero to one hundred.                                              |
 | `codespeak.voice.name`                            | empty              | Preferred operating system voice name.                                                      |
 | `codespeak.voice.activationMode`                  | `toggle`           | Starts one toggle session or continuous listening.                                          |
-| `codespeak.voice.silenceTimeoutSeconds`           | `3`                | Stops a toggle session after this many seconds of silence.                                  |
+| `codespeak.ai.demoMode`                           | `false`            | Uses deterministic local demo responses without an API key or external request.             |
+| `codespeak.voice.silenceTimeoutSeconds`           | `1.5`              | Processes an utterance after this pause following recognized speech.                        |
+| `codespeak.voice.initialSpeechTimeoutSeconds`     | `12`               | Waits this long for the first recognized speech before ending the session.                  |
 | `codespeak.voice.continuousListening`             | `false`            | Restarts listening after each recognized continuous utterance.                              |
 | `codespeak.voice.confirmBeforeDestructiveActions` | `true`             | Requires confirmation before voice initiated changes.                                       |
 | `codespeak.voice.audioCues`                       | `true`             | Enables optional nonverbal voice state cues.                                                |

@@ -157,6 +157,19 @@ export function registerCommands(
 
   const commands: ReadonlyArray<readonly [string, CommandCallback]> = [
     [
+      CommandIds.toggleDemoMode,
+      async () => {
+        const configuration = vscode.workspace.getConfiguration('codespeak');
+        const enabled = !configuration.get<boolean>('ai.demoMode', false);
+        await configuration.update('ai.demoMode', enabled, vscode.ConfigurationTarget.Workspace);
+        await accessibleSpeech.speak(
+          enabled
+            ? 'Local demo AI enabled. CodeSpeak will not contact Gemini.'
+            : 'Local demo AI disabled. CodeSpeak will use the configured Gemini service.',
+        );
+      },
+    ],
+    [
       CommandIds.setApiKey,
       async () => {
         const value = await services.userInterface.requestText('Set Gemini API key', {

@@ -421,6 +421,15 @@ export const CODE_SPEAK_COMMANDS: readonly CodeSpeakCommandDefinition[] = [
     true,
   ),
   definition(
+    CommandIds.toggleDemoMode,
+    'Toggle local demo AI',
+    ['toggle local demo ai', 'enable demo mode', 'disable demo mode'],
+    'Switch between deterministic local demo responses and the configured Gemini service.',
+    false,
+    false,
+    true,
+  ),
+  definition(
     CommandIds.undo,
     'Undo',
     ['undo', 'undo that'],

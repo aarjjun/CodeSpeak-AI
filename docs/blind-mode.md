@@ -4,6 +4,8 @@ Blind Mode uses Microsoft VS Code Speech for local transcription. CodeSpeak rece
 
 When a microphone is unavailable, run **CodeSpeak AI: Enter Voice Command as Text**. The typed phrase uses the same intent resolver, confirmation rules, command registry, and executor as a spoken transcript.
 
+For an offline or quota limited presentation, enable **CodeSpeak AI: Enable or Disable Local Demo AI**. The local provider returns deterministic, clearly identified demonstration content without sending code or questions to an external service.
+
 ## Resolution order
 
 1. Stop, pause, continue, confirm, and cancel.

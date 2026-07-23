@@ -15,6 +15,8 @@ import type { SecretStore, StateStore } from '../application/ports/persistence/p
 import { VsCodeConfigurationGateway } from '../config/vscode-configuration-gateway';
 import { OutputChannelLogger } from '../infrastructure/logging/output-channel-logger';
 import { GeminiProvider } from '../infrastructure/ai/gemini/gemini-provider';
+import { DemoAwareAiProvider } from '../infrastructure/ai/demo/demo-aware-ai-provider';
+import { LocalDemoAiProvider } from '../infrastructure/ai/demo/local-demo-ai-provider';
 import { TypeScriptAccessibilityAnalyzer } from '../infrastructure/accessibility/typescript-accessibility-analyzer';
 import { FilePromptRepository } from '../infrastructure/ai/prompts/file-prompt-repository';
 import { VsCodeSecretStore } from '../infrastructure/persistence/vscode-secret-store';
@@ -57,6 +59,10 @@ export function createServiceContainer(context: vscode.ExtensionContext): Servic
   const configuration = new VsCodeConfigurationGateway();
   const secrets = new VsCodeSecretStore(context.secrets);
   const prompts = new FilePromptRepository(context.extensionUri);
+  const gemini = new GeminiProvider(secrets, configuration, prompts, logger);
+  const ai = new DemoAwareAiProvider(gemini, new LocalDemoAiProvider(), () =>
+    vscode.workspace.getConfiguration('codespeak').get<boolean>('ai.demoMode', false),
+  );
   const accessibilityReports = new AccessibilityDiagnosticsProvider();
   const profileCatalog = new AccessibilityProfileCatalog();
   context.subscriptions.push(accessibilityReports);
@@ -78,7 +84,7 @@ export function createServiceContainer(context: vscode.ExtensionContext): Servic
   return {
     accessibilityAnalyzer: new TypeScriptAccessibilityAnalyzer(),
     accessibilityReports,
-    ai: new GeminiProvider(secrets, configuration, prompts, logger),
+    ai,
     configuration,
     diagnostics: new VsCodeDiagnosticsGateway(),
     editor: new VsCodeEditorGateway(),

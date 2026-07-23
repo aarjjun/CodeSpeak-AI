@@ -60,6 +60,11 @@
         "category": "CodeSpeak AI"
       },
       {
+        "command": "codespeak.ai.toggleDemoMode",
+        "title": "Enable or Disable Local Demo AI",
+        "category": "CodeSpeak AI"
+      },
+      {
         "command": "codespeak.clearApiKey",
         "title": "Clear Gemini API Key",
         "category": "CodeSpeak AI"
@@ -339,6 +344,11 @@
           "default": "gemini-3.5-flash",
           "description": "Gemini model used for AI-assisted operations."
         },
+        "codespeak.ai.demoMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use deterministic local demo responses without contacting Gemini or requiring an API key. Demo responses are clearly identified and are not semantic AI analysis."
+        },
         "codespeak.voice.language": {
           "type": "string",
           "default": "en-US",
@@ -378,10 +388,17 @@
         },
         "codespeak.voice.silenceTimeoutSeconds": {
           "type": "number",
-          "default": 3,
-          "minimum": 2,
+          "default": 1.5,
+          "minimum": 0.5,
+          "maximum": 10,
+          "description": "Seconds of silence after recognized speech before the current utterance is processed."
+        },
+        "codespeak.voice.initialSpeechTimeoutSeconds": {
+          "type": "number",
+          "default": 12,
+          "minimum": 5,
           "maximum": 60,
-          "description": "Seconds of silence before the current utterance is processed."
+          "description": "Seconds to wait for the first recognized speech before stopping the listening session."
         },
         "codespeak.voice.continuousListening": {
           "type": "boolean",

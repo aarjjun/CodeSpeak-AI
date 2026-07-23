@@ -55,6 +55,7 @@ describe('VoiceIntentParser', () => {
     ['open the folder', 'codespeak-command', { commandId: 'codespeak.openFolder' }],
     ['ask copilot to refactor this function', 'copilot-chat', { prompt: 'refactor this function' }],
     ['ask gemini what is recursion', 'gemini-chat', { prompt: 'what is recursion' }],
+    ['ask gemini', 'codespeak-command', { commandId: 'codespeak.askLearningQuestion' }],
     ['use gemini to explain closures', 'gemini-chat', { prompt: 'explain closures' }],
     ['send this question to gemini', 'gemini-chat', { prompt: 'this question' }],
     ['code speak summarize file', 'codespeak-command', { commandId: 'codespeak.summarizeFile' }],

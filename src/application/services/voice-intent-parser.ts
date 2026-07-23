@@ -117,7 +117,7 @@ export class VoiceIntentParser {
     }
     if (normalized === 'ask gemini' || normalized === 'open gemini') {
       return this.intent('codespeak-command', {
-        commandId: 'codespeak.learning.askQuestion',
+        commandId: 'codespeak.askLearningQuestion',
       });
     }
 

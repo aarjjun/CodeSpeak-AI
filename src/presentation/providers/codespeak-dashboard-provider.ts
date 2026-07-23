@@ -51,6 +51,11 @@ export class CodeSpeakDashboardProvider
         command: 'codespeak.askLearningQuestion',
       },
       {
+        label: 'Toggle local demo AI',
+        description: 'Use deterministic AI demonstrations without an external API key',
+        command: 'codespeak.ai.toggleDemoMode',
+      },
+      {
         label: 'Check accessibility',
         description: 'Publish deterministic JSX and TSX findings',
         command: 'codespeak.checkAccessibility',
