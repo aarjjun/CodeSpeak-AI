@@ -4,7 +4,12 @@
 
 CodeSpeak AI is an accessibility layer for Visual Studio Code. It reduces the visual, physical, and cognitive effort required to understand code, navigate a workspace, interpret errors, and apply AI-generated changes.
 
-Version `0.2.0` is a preview release. It focuses on accessible code understanding, privacy-bounded project summaries, confirmed AI edits, deterministic accessibility checks, and optional voice interaction.
+Version `0.2.1` is a preview release. It focuses on accessible code understanding, privacy-bounded project summaries, confirmed AI edits, deterministic accessibility checks, and optional voice interaction.
+
+## Developed by
+
+- [Arjun Anoop](https://github.com/aarjjun) — Developer
+- [Deva Nanda Nair](https://github.com/devananda6200) — Developer
 
 ## Why CodeSpeak AI
 

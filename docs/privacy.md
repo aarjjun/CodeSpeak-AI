@@ -21,7 +21,7 @@ Only explicitly invoked AI workflows send data. Depending on the command, a requ
 - A selected diagnostic message, code, severity, and source location.
 - A user-provided code-generation instruction.
 
-CodeSpeak does not send the entire workspace for the implemented `0.2.0` workflows. Folder and workspace summaries require confirmation and are limited to 12 text/code files, 5,000 characters per file, and 60,000 characters total. Common credential, private-key, dependency, build, hidden, and version-control paths are excluded. Provider-side response storage is disabled.
+CodeSpeak does not send the entire workspace for the implemented `0.2.1` workflows. Folder and workspace summaries require confirmation and are limited to 12 text/code files, 5,000 characters per file, and 60,000 characters total. Common credential, private-key, dependency, build, hidden, and version-control paths are excluded. Provider-side response storage is disabled.
 
 ## Provider order
 

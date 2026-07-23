@@ -15,6 +15,12 @@ This project follows [Semantic Versioning](https://semver.org/).
 - Spoken destructive-action confirmation, speech controls, configurable silence timeout, and optional audio cues.
 - Voice intent classification for unmatched requests and tests for common recognition variants.
 
+## [0.2.1] - 2026-07-23
+
+### Changed
+
+- Added equal public developer attribution for Arjun Anoop and Deva Nanda Nair in the Marketplace README and package metadata.
+
 ## [0.2.0] - 2026-07-19
 
 ### Added
