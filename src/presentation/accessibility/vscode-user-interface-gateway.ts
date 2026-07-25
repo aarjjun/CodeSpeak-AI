@@ -5,6 +5,7 @@ import type {
   UserChoice,
   UserInterfaceGateway,
 } from '../../application/ports/platform/user-interface-gateway';
+import type { VoiceCommandCancellation } from '../voice/voice-command-cancellation';
 
 interface AccessibleChoiceItem extends vscode.QuickPickItem {
   readonly choiceId: string;
@@ -13,7 +14,7 @@ interface AccessibleChoiceItem extends vscode.QuickPickItem {
 export class VsCodeUserInterfaceGateway implements UserInterfaceGateway, vscode.Disposable {
   private readonly announcementItem: vscode.StatusBarItem;
 
-  public constructor() {
+  public constructor(private readonly voiceCancellation?: VoiceCommandCancellation) {
     this.announcementItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     this.announcementItem.name = 'CodeSpeak AI announcements';
   }
@@ -98,7 +99,12 @@ export class VsCodeUserInterfaceGateway implements UserInterfaceGateway, vscode.
         const controller = new AbortController();
         const subscription = cancellationToken.onCancellationRequested(() => controller.abort());
         try {
-          return await operation(controller.signal);
+          const voiceSignal = this.voiceCancellation?.currentSignal;
+          return await operation(
+            voiceSignal === undefined
+              ? controller.signal
+              : AbortSignal.any([controller.signal, voiceSignal]),
+          );
         } finally {
           subscription.dispose();
         }

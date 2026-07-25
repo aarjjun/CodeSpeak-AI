@@ -13,6 +13,11 @@ describe('VoiceIntentParser', () => {
     ['Summarize this file', 'codespeak-command', { commandId: 'codespeak.summarizeFile' }],
     ['Check accessibility', 'codespeak-command', { commandId: 'codespeak.checkAccessibility' }],
     ['Start focus timer', 'codespeak-command', { commandId: 'codespeak.focus.startTimer' }],
+    [
+      'Cancel current voice command',
+      'codespeak-command',
+      { commandId: 'codespeak.voice.cancelCurrent' },
+    ],
     ['Read current function', 'codespeak-command', { commandId: 'codespeak.readCodeStructure' }],
   ] as const)('maps %s to an allowlisted intent', (transcript, name, parameters) => {
     expect(parser.parse(transcript)).toMatchObject({ name, parameters });
@@ -38,6 +43,17 @@ describe('VoiceIntentParser', () => {
       name: 'codespeak-command',
       parameters: { commandId: 'codespeak.redo' },
       requiresConfirmation: true,
+    });
+  });
+
+  it('preserves the requested Dyslexia Mode state for deterministic voice commands', () => {
+    expect(parser.parse('Turn on dyslexia mode')).toMatchObject({
+      name: 'codespeak-command',
+      parameters: { commandId: 'codespeak.toggleDyslexiaMode', requestedState: true },
+    });
+    expect(parser.parse('Disable dyslexia mode')).toMatchObject({
+      name: 'codespeak-command',
+      parameters: { commandId: 'codespeak.toggleDyslexiaMode', requestedState: false },
     });
   });
 

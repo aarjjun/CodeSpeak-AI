@@ -2,9 +2,12 @@
 
 Blind Mode uses Microsoft VS Code Speech for local transcription. CodeSpeak receives transcript text, resolves deterministic commands first, and asks the live AI router to classify only transcripts that did not match a known command. OpenAI is primary and Gemini is attempted after eligible OpenAI failures. Spoken input is inserted into the editor only when the resolved intent is dictation.
 
-When a microphone is unavailable, run **CodeSpeak AI: Enter Voice Command as Text**. The typed phrase uses the same intent resolver, confirmation rules, command registry, and executor as a spoken transcript.
+Press `Ctrl+Alt+Escape` on Windows and Linux or `Cmd+Alt+Escape` on macOS to cancel the
+current voice operation. Cancelling while listening discards the transcript. Cancelling while
+processing aborts intent classification and active AI requests, stops speech output, disables
+continuous restart, restores the editor, and resets the voice status.
 
-For an offline or quota limited presentation, enable **CodeSpeak AI: Enable or Disable Local Demo AI**. The local provider returns deterministic, clearly identified demonstration content without sending code or questions to an external service.
+When a microphone is unavailable, run **CodeSpeak AI: Enter Voice Command as Text**. The typed phrase uses the same intent resolver, confirmation rules, command registry, and executor as a spoken transcript.
 
 ## Resolution order
 

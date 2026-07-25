@@ -82,9 +82,16 @@ export class VoiceIntentParser {
 
     const registeredCommand = findCommandByVoiceAlias(normalized);
     if (registeredCommand !== undefined) {
+      const requestedState =
+        registeredCommand.id === 'codespeak.toggleDyslexiaMode'
+          ? dyslexiaRequestedState(normalized)
+          : undefined;
       return {
         name: 'codespeak-command',
-        parameters: { commandId: registeredCommand.id },
+        parameters: {
+          commandId: registeredCommand.id,
+          ...(requestedState === undefined ? {} : { requestedState }),
+        },
         confidence: 1,
         requiresConfirmation: registeredCommand.requiresConfirmation,
       };
@@ -289,6 +296,12 @@ export class VoiceIntentParser {
     const numeric = Number.parseInt(value, 10);
     return Number.isSafeInteger(numeric) && numeric > 0 ? numeric : value;
   }
+}
+
+function dyslexiaRequestedState(normalized: string): boolean | undefined {
+  if (normalized.startsWith('enable ') || normalized.startsWith('turn on ')) return true;
+  if (normalized.startsWith('disable ') || normalized.startsWith('turn off ')) return false;
+  return undefined;
 }
 
 export function parseSpokenNumber(value: string): number | undefined {

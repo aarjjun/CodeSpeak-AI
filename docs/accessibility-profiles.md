@@ -10,10 +10,13 @@ preset. Selecting Custom Mode restores the recorded values and stops managing th
 ### Added behavior
 
 - Uses OpenDyslexic when the font is installed, followed by standard coding font fallbacks.
-- Increases font size, line height, and letter spacing.
+- Applies configurable font size, line height, letter spacing, and cursor width.
 - Wraps long lines.
-- Enables native bracket pair colorization and bracket guides.
+- Optionally hides the minimap, breadcrumbs, CodeLens, sticky scroll, and indentation guides.
+- Enables configurable native bracket pair colorization and bracket guides.
 - Makes bracket characters bold in the active editor.
+- Highlights the active line and current code block with theme aware decorations.
+- Adds focused reading, simple AI explanations, code chunking, and ambiguous character reading.
 - Requests brief, grouped AI explanations through the profile reading policy.
 - Reduces interface motion.
 
@@ -26,6 +29,9 @@ preset. Selecting Custom Mode restores the recorded values and stops managing th
 - Simplified error explanations require a working AI provider. Deterministic diagnostics still
   show their original compiler wording.
 - Dyslexia needs vary. The preset is a starting point and is not a medical assessment.
+- Font availability cannot be detected reliably through VS Code. Configured fonts use safe
+  fallbacks and must be installed separately.
+- Current block detection depends on language symbols and otherwise uses indentation as a fallback.
 
 ## Low Vision Mode
 
@@ -66,28 +72,6 @@ preset. Selecting Custom Mode restores the recorded values and stops managing th
   across a VS Code reload.
 - A one minute minimum is used for both focus and break durations.
 
-## Motor Accessibility Mode
-
-### Added behavior
-
-- Increases the whole VS Code workspace scale.
-- Enables the VS Code Command Center.
-- Uses a wide cursor, full line highlighting, and no minimap.
-- Enables the voice first CodeSpeak interaction policy.
-- Requires confirmation for all profile aware AI editing actions.
-- Adds Show Accessible Controls, a native Quick Pick containing common CodeSpeak actions.
-
-### Limitations
-
-- Extensions cannot resize individual native VS Code buttons. Workspace zoom enlarges the whole
-  interface instead.
-- Voice input requires Microsoft VS Code Speech and microphone permission. Typed voice simulation
-  remains available without a microphone.
-- VS Code and third party extension commands outside CodeSpeak may use their own confirmation
-  behavior.
-- Reduced precision interaction is limited by the VS Code extension API. CodeSpeak uses native
-  Quick Pick, Input Box, Command Palette, Tree View, and voice routes where possible.
-
 ## Test every profile
 
 ### Preparation
@@ -126,24 +110,11 @@ preset. Selecting Custom Mode restores the recorded values and stops managing th
 3. Confirm that the current line and the containing function are highlighted.
 4. Confirm that minimap, breadcrumbs, CodeLens, sticky scroll, and hover popups are hidden.
 5. Run `CodeSpeak AI: Toggle Focus View`. Confirm VS Code enters Zen Mode. Run it again to exit.
-6. Set `CodeSpeak AI › Focus: Minutes` to one and
-   `CodeSpeak AI › Focus: Break Minutes` to one.
-7. Run `CodeSpeak AI: Start Focus Timer`. Confirm the accessible status bar countdown.
+6. Confirm `CodeSpeak AI > Focus: Minutes` is set to five.
+7. Run `CodeSpeak AI: Start Focus Timer`. Confirm the status bar countdown starts at five minutes.
 8. Run Pause Focus Timer and Reset Focus Timer to verify both controls.
-9. For the full reminder flow, let the one minute timer finish. Confirm that the break timer starts
-   and announces the transition.
-
-### Test Motor Accessibility Mode
-
-1. Select Motor Accessibility Mode.
-2. Confirm that the interface is enlarged, Command Center is visible, the cursor is wide, and the
-   minimap is hidden.
-3. Run `CodeSpeak AI: Show Accessible Controls`.
-4. Navigate the picker with arrow keys, Tab, Enter, and a screen reader if available.
-5. Choose Read Current Line and confirm that the command runs.
-6. Run `CodeSpeak AI: Enter Voice Command as Text`, enter `show accessible controls`, and confirm
-   that the same picker opens.
-7. With VS Code Speech installed, press Control Alt Space and say `show accessible controls`.
+9. Let the five minute timer finish. Confirm that CodeSpeak speaks the focus completion message
+   and starts the break timer.
 
 ### Test restoration
 

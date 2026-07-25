@@ -53,14 +53,22 @@ export class VoiceIntentExecutor {
     await this.executeConfirmed(intent, transcript);
   }
 
+  public cancelPending(): boolean {
+    if (this.pendingIntent === undefined) return false;
+    this.pendingIntent = undefined;
+    return true;
+  }
+
   private async executeConfirmed(intent: VoiceIntent, transcript: string): Promise<void> {
     switch (intent.name) {
-      case 'codespeak-command':
+      case 'codespeak-command': {
+        const requestedState = intent.parameters['requestedState'];
         await vscode.commands.executeCommand(
           this.stringParameter(intent, 'commandId'),
-          intent.requiresConfirmation,
+          typeof requestedState === 'boolean' ? requestedState : intent.requiresConfirmation,
         );
         return;
+      }
       case 'create-code':
       case 'modify-code':
         await vscode.commands.executeCommand(

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import type { UserInterfaceGateway } from '../../application/ports/platform/user-interface-gateway';
+import type { AccessibleSpeechService } from '../../application/services/accessible-speech-service';
 
 type TimerPhase = 'focus' | 'break';
 
@@ -11,7 +12,10 @@ export class FocusTimerController implements vscode.Disposable {
   private remainingSeconds = this.durationSeconds('focus');
   private running = false;
 
-  public constructor(private readonly userInterface: UserInterfaceGateway) {
+  public constructor(
+    private readonly userInterface: UserInterfaceGateway,
+    private readonly speech: AccessibleSpeechService,
+  ) {
     this.status.name = 'CodeSpeak focus timer';
     this.status.command = 'codespeak.focus.pauseTimer';
     this.configurationSubscription = vscode.workspace.onDidChangeConfiguration((event) => {
@@ -63,9 +67,9 @@ export class FocusTimerController implements vscode.Disposable {
         this.phase = 'break';
         this.remainingSeconds = this.durationSeconds('break');
         this.render();
-        void this.userInterface.announce(
+        void this.speech.speakAlways(
           `Focus session complete. Break timer started for ${String(this.durationMinutes('break'))} minutes.`,
-          'assertive',
+          'critical',
         );
       } else {
         this.phase = 'focus';
@@ -102,7 +106,7 @@ export class FocusTimerController implements vscode.Disposable {
   }
   private durationMinutes(phase: TimerPhase): number {
     const key = phase === 'focus' ? 'minutes' : 'breakMinutes';
-    const fallback = phase === 'focus' ? 25 : 5;
+    const fallback = 5;
     const configured = vscode.workspace
       .getConfiguration('codespeak.focus')
       .get<number>(key, fallback);

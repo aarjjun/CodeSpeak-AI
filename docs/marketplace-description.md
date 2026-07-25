@@ -2,7 +2,7 @@
 
 **The AI-powered accessibility assistant for developers.**
 
-CodeSpeak AI adapts Visual Studio Code for developers who are blind, have low vision or motor impairments, experience dyslexia or ADHD, or simply benefit from clearer code explanations and lower-cognitive-load navigation.
+CodeSpeak AI adapts Visual Studio Code for developers who are blind, have low vision, experience dyslexia or ADHD, or simply benefit from clearer code explanations and lower-cognitive-load navigation.
 
 ## Highlights
 
@@ -11,7 +11,7 @@ CodeSpeak AI adapts Visual Studio Code for developers who are blind, have low vi
 - **Confirmed Code Generation:** Describe code in natural language, preview the result, and decide whether to insert it.
 - **Accessible Documentation:** Generate docstrings, JSDoc, Javadoc, and Doxygen comments from a selection.
 - **Accessibility Checker:** Publish deterministic JSX and TSX findings for alternative text, labels, keyboard access, focusability, and accessible names.
-- **Accessibility Profiles:** Choose behavior designed for blind, low-vision, dyslexia, motor-accessibility, or ADHD workflows.
+- **Accessibility Profiles:** Choose behavior designed for blind, low-vision, dyslexia, or ADHD workflows.
 - **Optional Voice Control:** Navigate and request code through local Microsoft VS Code Speech transcription.
 - **Spoken Output:** Read selections and structural summaries aloud with screen-reader announcements as the independent fallback.
 - **Project Summaries:** Summarize a file, current folder, or workspace in a structured, screen-reader-friendly Markdown preview.

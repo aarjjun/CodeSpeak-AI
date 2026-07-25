@@ -1,5 +1,4 @@
-export type AccessibilityProfileId =
-  'blind' | 'low-vision' | 'dyslexia' | 'motor' | 'adhd' | 'custom';
+export type AccessibilityProfileId = 'blind' | 'low-vision' | 'dyslexia' | 'adhd' | 'custom';
 
 export type ContentVerbosity = 'brief' | 'balanced' | 'detailed';
 export type ConfirmationLevel = 'minimal' | 'risky-actions' | 'all-actions';

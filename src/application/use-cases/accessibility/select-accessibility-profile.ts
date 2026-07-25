@@ -36,8 +36,6 @@ export class SelectAccessibilityProfile {
         return 'Larger text, stronger cursor and line focus, reduced motion, and simplified editor chrome.';
       case 'dyslexia':
         return 'Readable font fallback, wider spacing, wrapped lines, colored brackets, and brief explanations.';
-      case 'motor':
-        return 'Larger interface scale, wide cursor, voice support, native controls, and stronger confirmation.';
       case 'adhd':
         return 'Active block focus, reduced editor distractions, Focus View, and configurable timers.';
       case 'custom':

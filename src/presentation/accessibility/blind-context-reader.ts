@@ -116,16 +116,18 @@ export class BlindContextReader {
     const containing = this.deepestContainingSymbol(symbols, position);
     const diagnostics = vscode.languages
       .getDiagnostics(editor.document.uri)
-      .filter((item) => item.range.contains(position));
+      .filter(
+        (item) => item.range.start.line <= position.line && item.range.end.line >= position.line,
+      );
     const selected = editor.selection.isEmpty
       ? 'No text is selected.'
       : `Text is selected from line ${String(editor.selection.start.line + 1)} to line ${String(editor.selection.end.line + 1)}.`;
     const location =
       containing === undefined
         ? 'You are not inside a named function or class.'
-        : `You are in ${containing.name}.`;
+        : `You are inside the ${vscode.SymbolKind[containing.kind].toLocaleLowerCase()} ${containing.name}.`;
     await this.speech.speak(
-      `${vscode.workspace.asRelativePath(editor.document.uri)}. Line ${String(position.line + 1)}, column ${String(position.character + 1)}. ${location} ${selected} ${String(diagnostics.length)} diagnostics are on this position.`,
+      `${vscode.workspace.asRelativePath(editor.document.uri)}. Line ${String(position.line + 1)}, column ${String(position.character + 1)}. ${location} ${selected} ${String(diagnostics.length)} diagnostics are on this line.`,
     );
   }
 
