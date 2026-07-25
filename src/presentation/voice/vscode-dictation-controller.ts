@@ -6,6 +6,7 @@ import type { VoiceIntentExecutor } from './voice-intent-executor';
 import type { AudioCueService } from '../../infrastructure/speech/audio-cue-service';
 import type { AccessibleSpeechService } from '../../application/services/accessible-speech-service';
 import { resolveVoiceTiming } from './voice-timing';
+import type { VoiceCommandCancellation } from './voice-command-cancellation';
 
 const SPEECH_EXTENSION_ID = 'ms-vscode.vscode-speech';
 const START_DICTATION_COMMAND = 'workbench.action.editorDictation.start';
@@ -39,6 +40,7 @@ export class VsCodeDictationController implements vscode.Disposable {
     private readonly logger: Logger,
     private readonly audioCues: AudioCueService,
     private readonly speech: AccessibleSpeechService,
+    private readonly cancellation: VoiceCommandCancellation,
   ) {
     this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 99);
     this.statusBarItem.name = 'CodeSpeak AI voice status';
@@ -86,6 +88,50 @@ export class VsCodeDictationController implements vscode.Disposable {
     }
     this.continuous = false;
     await this.cancelCurrentSession('Continuous voice mode stopped.');
+  }
+
+  public async cancelCurrentCommand(): Promise<void> {
+    const wasListening = this.state === 'listening';
+    const cancelledOperation = this.cancellation.cancel();
+    const cancelledPending = this.executor.cancelPending();
+    if (!wasListening && !this.commandInProgress && !cancelledOperation && !cancelledPending) {
+      await this.speech.speak('No voice command is active.');
+      return;
+    }
+
+    this.continuous = false;
+    await this.speech.interrupt();
+    await this.cancelCurrentSession(
+      wasListening
+        ? 'Voice input discarded. The command was not processed.'
+        : 'Current voice command cancelled.',
+    );
+  }
+
+  public async simulate(transcript: string): Promise<void> {
+    if (this.commandInProgress || this.state !== 'idle') {
+      await this.speech.speak('A CodeSpeak voice command is already active.', 'critical');
+      return;
+    }
+    this.state = 'processing';
+    this.commandInProgress = true;
+    await vscode.commands.executeCommand('setContext', 'codespeak.voiceProcessing', true);
+    this.renderStatus();
+    const operationSignal = this.cancellation.begin();
+    try {
+      await this.userInterface.announce(`Testing voice command: ${transcript}`);
+      const intent = await this.resolver.resolve(transcript, operationSignal);
+      if (operationSignal.aborted) return;
+      await this.executor.execute(intent, transcript);
+    } catch (error: unknown) {
+      if (operationSignal.aborted) return;
+      this.logger.error('Typed voice command processing failed.', error);
+      await this.speech.speak('The typed voice command could not be completed.', 'critical');
+    } finally {
+      this.cancellation.complete(operationSignal);
+      this.commandInProgress = false;
+      await this.markIdle();
+    }
   }
 
   private async start(): Promise<void> {
@@ -196,9 +242,9 @@ export class VsCodeDictationController implements vscode.Disposable {
     await vscode.commands.executeCommand('setContext', 'codespeak.voiceListening', false);
     await vscode.commands.executeCommand('setContext', 'codespeak.voiceProcessing', true);
     this.renderStatus();
-    await this.markIdle(true);
 
     const restart = this.continuous;
+    const operationSignal = this.cancellation.begin();
     try {
       try {
         await vscode.commands.executeCommand(STOP_DICTATION_COMMAND);
@@ -210,12 +256,14 @@ export class VsCodeDictationController implements vscode.Disposable {
       const transcript = this.voiceDocument?.getText().trim() ?? '';
       await this.closeVoiceDocument();
       await this.restorePreviousEditor();
-      await this.markIdle(true);
 
       if (execute && transcript.length > 0) {
         this.audioCues.play('recognized');
         await this.userInterface.announce(`Recognized: ${transcript}`);
-        await this.executor.execute(await this.resolver.resolve(transcript), transcript);
+        const intent = await this.resolver.resolve(transcript, operationSignal);
+        if (signalWasAborted(operationSignal)) return;
+        await this.executor.execute(intent, transcript);
+        if (signalWasAborted(operationSignal)) return;
         this.audioCues.play('completed');
       } else if (execute) {
         this.audioCues.play('failed');
@@ -226,6 +274,7 @@ export class VsCodeDictationController implements vscode.Disposable {
         await this.userInterface.showWarning('No speech was recognized.');
       }
     } catch (error: unknown) {
+      if (operationSignal.aborted) return;
       this.audioCues.play('failed');
       this.logger.error('Voice command processing failed.', error);
       await this.speech.speak(
@@ -235,12 +284,13 @@ export class VsCodeDictationController implements vscode.Disposable {
     } finally {
       await this.closeVoiceDocument();
       await this.restorePreviousEditor();
+      this.cancellation.complete(operationSignal);
       this.commandInProgress = false;
       await this.markIdle();
     }
-    if (restart) {
+    if (restart && this.continuous && !operationSignal.aborted) {
       await this.start();
-    } else {
+    } else if (!operationSignal.aborted) {
       this.audioCues.play('listening-stopped');
       await this.speech.speak('Voice mode stopped.');
     }
@@ -336,6 +386,7 @@ export class VsCodeDictationController implements vscode.Disposable {
 
   private renderStatus(): void {
     if (this.state === 'listening') {
+      this.statusBarItem.command = 'codespeak.voice.toggle';
       this.statusBarItem.text = '$(mic-filled) CodeSpeak listening';
       this.statusBarItem.tooltip = this.continuous
         ? 'Continuous voice mode is active. Run Stop Continuous Voice Mode to stop.'
@@ -348,7 +399,9 @@ export class VsCodeDictationController implements vscode.Disposable {
       return;
     }
     if (this.state === 'processing') {
+      this.statusBarItem.command = 'codespeak.voice.cancelCurrent';
       this.statusBarItem.text = '$(loading~spin) CodeSpeak processing voice';
+      this.statusBarItem.tooltip = 'Activate to cancel the current voice command.';
       this.statusBarItem.accessibilityInformation = {
         label: 'CodeSpeak is processing the voice command.',
         role: 'status',
@@ -356,13 +409,19 @@ export class VsCodeDictationController implements vscode.Disposable {
       this.statusBarItem.show();
       return;
     }
+    this.statusBarItem.command = 'codespeak.voice.toggle';
     this.statusBarItem.hide();
   }
 
   public dispose(): void {
+    this.cancellation.cancel();
     this.clearPauseTimer();
     this.clearInitialSpeechTimer();
     this.documentChangeSubscription?.dispose();
     this.statusBarItem.dispose();
   }
+}
+
+function signalWasAborted(signal: AbortSignal): boolean {
+  return signal.aborted;
 }

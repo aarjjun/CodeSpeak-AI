@@ -14,6 +14,11 @@ This project follows [Semantic Versioning](https://semver.org/).
 - GitHub Copilot Chat routing without Gemini fallback.
 - Spoken destructive-action confirmation, speech controls, configurable silence timeout, and optional audio cues.
 - Voice intent classification for unmatched requests and tests for common recognition variants.
+- Configurable, reversible Dyslexia Mode typography and visual simplification settings.
+- Theme-aware current line and block tracking with an indentation fallback.
+- Dyslexia-friendly diagnostic, selection, line, block, function, file, and step explanations.
+- Dyslexia font setup, focused reading, ambiguous character assistance, status indication, and
+  voice aliases.
 
 ## [0.2.0] - 2026-07-19
 
@@ -44,7 +49,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 - Documentation generation for Python, JavaScript, TypeScript, Java, C, and C++.
 - TypeScript AST structural summaries for JavaScript, JSX, TypeScript, and TSX.
 - Deterministic JSX and TSX accessibility checks published to the Problems panel.
-- Blind, low-vision, dyslexia, motor-accessibility, ADHD, and custom profiles.
+- Blind, low-vision, dyslexia, ADHD, and custom profiles.
 - Keyboard-accessible file, line, symbol, diagnostic, undo, and redo navigation.
 - Local voice recognition through the optional Microsoft VS Code Speech extension.
 - Confirmed continuous voice mode and allowlisted voice intents.

@@ -29,6 +29,7 @@ const EXPECTED_COMMANDS = [
   'codespeak.speech.stop',
   'codespeak.undo',
   'codespeak.voice.startContinuous',
+  'codespeak.voice.cancelCurrent',
   'codespeak.voice.stopContinuous',
   'codespeak.voice.simulate',
   'codespeak.voice.toggle',
@@ -97,8 +98,15 @@ const cases: readonly IntegrationCase[] = [
       assert.equal(configuration.get('autoExplainErrors'), false);
       assert.equal(configuration.get('voice.rate'), 1);
       assert.equal(configuration.get('openaiModel'), 'gpt-5.6-sol');
-      assert.equal(configuration.get('focus.minutes'), 25);
+      assert.equal(configuration.get('focus.minutes'), 5);
       assert.equal(configuration.get('focus.breakMinutes'), 5);
+      assert.equal(configuration.get('dyslexia.enabled'), false);
+      assert.equal(configuration.get('dyslexia.fontFamily'), 'OpenDyslexic');
+      assert.equal(configuration.get('dyslexia.fontSize'), 16);
+      assert.equal(configuration.get('dyslexia.lineHeight'), 26);
+      assert.equal(configuration.get('dyslexia.letterSpacing'), 0.5);
+      assert.equal(configuration.get('dyslexia.highlightCurrentBlock'), true);
+      assert.equal(configuration.get('dyslexia.dimInactiveCode'), false);
     },
   },
 ];

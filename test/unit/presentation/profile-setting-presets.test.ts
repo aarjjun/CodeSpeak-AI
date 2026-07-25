@@ -8,7 +8,7 @@ describe('profileSettingPreset', () => {
   it('adds readable typography and bracket guidance for dyslexia mode', () => {
     const preset = profileSettingPreset('dyslexia');
     expect(preset['editor.fontFamily']).toContain('OpenDyslexic');
-    expect(preset['editor.letterSpacing']).toBe(1);
+    expect(preset['editor.letterSpacing']).toBe(0.5);
     expect(preset['editor.bracketPairColorization.enabled']).toBe(true);
   });
 
@@ -16,13 +16,6 @@ describe('profileSettingPreset', () => {
     const preset = profileSettingPreset('low-vision');
     expect(preset['window.zoomLevel']).toBe(1);
     expect(preset['editor.fontSize']).toBe(18);
-    expect(preset['editor.cursorWidth']).toBe(4);
-  });
-
-  it('adds larger interaction targets and a visible cursor for motor mode', () => {
-    const preset = profileSettingPreset('motor');
-    expect(preset['window.zoomLevel']).toBe(1);
-    expect(preset['window.commandCenter']).toBe(true);
     expect(preset['editor.cursorWidth']).toBe(4);
   });
 
@@ -39,8 +32,8 @@ describe('profileSettingPreset', () => {
   });
 
   it('lists every setting managed by a profile exactly once', () => {
-    const allKeys = ['dyslexia', 'low-vision', 'motor', 'adhd'].flatMap((profile) =>
-      Object.keys(profileSettingPreset(profile as 'dyslexia' | 'low-vision' | 'motor' | 'adhd')),
+    const allKeys = ['dyslexia', 'low-vision', 'adhd'].flatMap((profile) =>
+      Object.keys(profileSettingPreset(profile as 'dyslexia' | 'low-vision' | 'adhd')),
     );
     expect(MANAGED_PROFILE_SETTING_KEYS).toEqual([...new Set(allKeys)].sort());
   });

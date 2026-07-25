@@ -51,11 +51,6 @@ export class CodeSpeakDashboardProvider
         command: 'codespeak.askLearningQuestion',
       },
       {
-        label: 'Toggle local demo AI',
-        description: 'Use deterministic AI demonstrations without an external API key',
-        command: 'codespeak.ai.toggleDemoMode',
-      },
-      {
         label: 'Set primary OpenAI key',
         description: 'Use OpenAI for CodeSpeak generation, explanation, and intent requests',
         command: 'codespeak.setOpenAiApiKey',
@@ -84,6 +79,11 @@ export class CodeSpeakDashboardProvider
         label: 'Start voice command',
         description: 'Use local VS Code Speech transcription',
         command: 'codespeak.voice.toggle',
+      },
+      {
+        label: 'Cancel current voice command',
+        description: 'Discard listening or abort the current voice operation',
+        command: 'codespeak.voice.cancelCurrent',
       },
       {
         label: 'Test voice without microphone',

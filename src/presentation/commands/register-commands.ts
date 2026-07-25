@@ -39,6 +39,11 @@ import { AudioCueService } from '../../infrastructure/speech/audio-cue-service';
 import { VoiceCommandHelp } from '../accessibility/voice-command-help';
 import { SecretKeys } from '../../config/secrets';
 import { AccessibleControls } from '../accessibility/accessible-controls';
+import { DyslexiaModeController } from '../accessibility/dyslexia/dyslexia-mode-controller';
+import { DyslexiaConfigurationController } from '../accessibility/dyslexia/dyslexia-configuration-controller';
+import { DyslexiaFocusController } from '../accessibility/dyslexia/dyslexia-focus-controller';
+import { SimpleExplanationService } from '../accessibility/dyslexia/simple-explanation-service';
+import { AmbiguousCharacterReader } from '../accessibility/dyslexia/ambiguous-character-reader';
 
 type CommandCallback = (...args: readonly unknown[]) => Promise<void>;
 
@@ -147,6 +152,7 @@ export function registerCommands(
     services.logger,
     audioCues,
     accessibleSpeech,
+    services.voiceCancellation,
   );
   const speakSelection = new SpeakSelection(
     services.speech,
@@ -154,25 +160,33 @@ export function registerCommands(
     services.editor,
     services.userInterface,
   );
-  const focusTimer = new FocusTimerController(services.userInterface);
+  const focusTimer = new FocusTimerController(services.userInterface, accessibleSpeech);
   const accessibleControls = new AccessibleControls(services.configuration, services.userInterface);
+  const dyslexiaMode = new DyslexiaModeController(
+    services.configuration,
+    services.state,
+    services.userInterface,
+  );
+  const dyslexiaConfiguration = new DyslexiaConfigurationController(services.userInterface);
+  const dyslexiaFocus = new DyslexiaFocusController(services.configuration, services.userInterface);
+  const simpleExplanation = new SimpleExplanationService(
+    services.ai,
+    services.userInterface,
+    accessibleSpeech,
+  );
+  const ambiguousCharacters = new AmbiguousCharacterReader(accessibleSpeech);
   context.subscriptions.push(voice);
   context.subscriptions.push(focusTimer);
+  context.subscriptions.push(dyslexiaMode);
+  context.subscriptions.push(dyslexiaFocus);
+
+  const simpleExplanationsActive = (): boolean =>
+    services.configuration.get().accessibilityProfile === 'dyslexia' &&
+    vscode.workspace
+      .getConfiguration('codespeak.dyslexia')
+      .get<boolean>('enableSimplifiedExplanations', true);
 
   const commands: ReadonlyArray<readonly [string, CommandCallback]> = [
-    [
-      CommandIds.toggleDemoMode,
-      async () => {
-        const configuration = vscode.workspace.getConfiguration('codespeak');
-        const enabled = !configuration.get<boolean>('ai.demoMode', false);
-        await configuration.update('ai.demoMode', enabled, vscode.ConfigurationTarget.Workspace);
-        await accessibleSpeech.speak(
-          enabled
-            ? 'Local demo AI enabled. CodeSpeak will not contact external AI services.'
-            : 'Local demo AI disabled. CodeSpeak will use OpenAI with the configured Gemini fallback.',
-        );
-      },
-    ],
     [
       CommandIds.setApiKey,
       async () => {
@@ -251,11 +265,21 @@ export function registerCommands(
       async (instruction, confirmationAlreadyGranted) =>
         generateCode.execute(asOptionalString(instruction), confirmationAlreadyGranted === true),
     ],
-    [CommandIds.explainSelection, async () => explainSelection.execute()],
+    [
+      CommandIds.explainSelection,
+      async () =>
+        simpleExplanationsActive()
+          ? simpleExplanation.explainCode('selection')
+          : explainSelection.execute(),
+    ],
     [
       CommandIds.explainCurrentFunction,
       async () => {
-        if (await blindReader.selectCurrentSymbol()) await explainSelection.execute();
+        if (simpleExplanationsActive()) {
+          await simpleExplanation.explainCode('function');
+        } else if (await blindReader.selectCurrentSymbol()) {
+          await explainSelection.execute();
+        }
       },
     ],
     [CommandIds.askCopilot, async (prompt) => copilot.send(asOptionalString(prompt) ?? '')],
@@ -263,13 +287,25 @@ export function registerCommands(
       CommandIds.askLearningQuestion,
       async (question) => assistLearning.execute(asOptionalString(question)),
     ],
-    [CommandIds.explainDiagnostic, async () => explainDiagnostic.execute()],
+    [
+      CommandIds.explainDiagnostic,
+      async () =>
+        simpleExplanationsActive()
+          ? simpleExplanation.explainCurrentDiagnostic()
+          : explainDiagnostic.execute(),
+    ],
     [
       CommandIds.generateDocumentation,
       async (confirmationAlreadyGranted) =>
         generateDocumentation.execute(confirmationAlreadyGranted === true),
     ],
-    [CommandIds.summarizeFile, async () => generateCodeSummary.execute('file')],
+    [
+      CommandIds.summarizeFile,
+      async () =>
+        simpleExplanationsActive()
+          ? simpleExplanation.explainCode('file')
+          : generateCodeSummary.execute('file'),
+    ],
     [CommandIds.summarizeFolder, async () => generateCodeSummary.execute('folder')],
     [CommandIds.summarizeWorkspace, async () => generateCodeSummary.execute('workspace')],
     [CommandIds.selectAccessibilityProfile, async () => selectAccessibilityProfile.execute()],
@@ -299,6 +335,7 @@ export function registerCommands(
     [CommandIds.undo, async () => history.execute('undo')],
     [CommandIds.redo, async () => history.execute('redo')],
     [CommandIds.voiceToggle, async () => voice.toggle()],
+    [CommandIds.voiceCancelCurrent, async () => voice.cancelCurrentCommand()],
     [CommandIds.voiceStartContinuous, async () => voice.startContinuous()],
     [CommandIds.voiceStopContinuous, async () => voice.stopContinuous()],
     [
@@ -311,12 +348,7 @@ export function registerCommands(
           },
         );
         if (transcript === undefined || transcript.trim().length === 0) return;
-        const normalizedTranscript = transcript.trim();
-        await services.userInterface.announce(`Testing voice command: ${normalizedTranscript}`);
-        await voiceExecutor.execute(
-          await voiceResolver.resolve(normalizedTranscript),
-          normalizedTranscript,
-        );
+        await voice.simulate(transcript.trim());
       },
     ],
     [CommandIds.speakSelection, async () => speakSelection.execute()],
@@ -331,6 +363,32 @@ export function registerCommands(
     [CommandIds.resetFocusTimer, async () => focusTimer.reset()],
     [CommandIds.showAccessibleControls, async () => accessibleControls.show()],
     [CommandIds.toggleFocusView, async () => accessibleControls.toggleFocusView()],
+    [
+      CommandIds.toggleDyslexiaMode,
+      async (desiredState) =>
+        typeof desiredState === 'boolean'
+          ? dyslexiaMode.setEnabled(desiredState)
+          : dyslexiaMode.toggle(),
+    ],
+    [CommandIds.configureDyslexiaMode, async () => dyslexiaConfiguration.configure()],
+    [CommandIds.configureDyslexiaFont, async () => dyslexiaConfiguration.configureFont()],
+    [CommandIds.openDyslexiaSetup, async () => dyslexiaConfiguration.showSetupInstructions()],
+    [CommandIds.toggleDyslexiaFocusMode, async () => dyslexiaFocus.toggle()],
+    [
+      CommandIds.explainCurrentErrorSimply,
+      async () => simpleExplanation.explainCurrentDiagnostic(),
+    ],
+    [CommandIds.explainSelectedCodeSimply, async () => simpleExplanation.explainCode('selection')],
+    [CommandIds.simplifyExplanation, async () => simpleExplanation.explainCode('explanation')],
+    [CommandIds.explainCurrentLineSimply, async () => simpleExplanation.explainCode('line')],
+    [CommandIds.explainCurrentBlockSimply, async () => simpleExplanation.explainCode('block')],
+    [
+      CommandIds.explainCurrentFunctionSimply,
+      async () => simpleExplanation.explainCode('function'),
+    ],
+    [CommandIds.summarizeFileSimply, async () => simpleExplanation.explainCode('file')],
+    [CommandIds.breakCodeIntoSteps, async () => simpleExplanation.explainCode('steps')],
+    [CommandIds.readAmbiguousCharacters, async () => ambiguousCharacters.execute()],
   ];
 
   for (const [id, callback] of commands) {

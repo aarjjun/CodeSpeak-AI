@@ -19,7 +19,6 @@
     "voice coding",
     "blind developers",
     "low vision",
-    "motor accessibility",
     "dyslexia",
     "ADHD",
     "Gemini",
@@ -58,11 +57,6 @@
       {
         "command": "codespeak.setApiKey",
         "title": "Set Gemini API Key",
-        "category": "CodeSpeak AI"
-      },
-      {
-        "command": "codespeak.ai.toggleDemoMode",
-        "title": "Enable or Disable Local Demo AI",
         "category": "CodeSpeak AI"
       },
       {
@@ -262,6 +256,11 @@
         "enablement": "!codespeak.voiceProcessing"
       },
       {
+        "command": "codespeak.voice.cancelCurrent",
+        "title": "Cancel Current Voice Command",
+        "category": "CodeSpeak AI"
+      },
+      {
         "command": "codespeak.voice.startContinuous",
         "title": "Start Continuous Voice Mode",
         "category": "CodeSpeak AI",
@@ -332,6 +331,76 @@
         "command": "codespeak.focus.toggleView",
         "title": "Toggle Focus View",
         "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.toggleDyslexiaMode",
+        "title": "Toggle Dyslexia Mode",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.configureDyslexiaMode",
+        "title": "Configure Dyslexia Mode",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.configureDyslexiaFont",
+        "title": "Configure Dyslexia Font",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.openDyslexiaSetup",
+        "title": "Open Dyslexia Mode Setup Instructions",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.toggleDyslexiaFocusMode",
+        "title": "Toggle Dyslexia Focus Mode",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.explainCurrentErrorSimply",
+        "title": "Explain Current Error Simply",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.explainSelectedCodeSimply",
+        "title": "Explain Selected Code Simply",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.simplifyExplanation",
+        "title": "Simplify This Explanation",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.explainCurrentLineSimply",
+        "title": "Explain Current Line",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.explainCurrentBlockSimply",
+        "title": "Explain Current Block",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.explainCurrentFunctionSimply",
+        "title": "Explain Current Function Simply",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.summarizeFileSimply",
+        "title": "Summarize File in Simple Language",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.breakCodeIntoSteps",
+        "title": "Break Code Into Steps",
+        "category": "CodeSpeak AI"
+      },
+      {
+        "command": "codespeak.readAmbiguousCharacters",
+        "title": "Read Ambiguous Characters",
+        "category": "CodeSpeak AI"
       }
     ],
     "keybindings": [
@@ -346,6 +415,12 @@
         "key": "ctrl+alt+space",
         "mac": "cmd+alt+space",
         "when": "codespeak.voiceListening"
+      },
+      {
+        "command": "codespeak.voice.cancelCurrent",
+        "key": "ctrl+alt+escape",
+        "mac": "cmd+alt+escape",
+        "when": "codespeak.voiceListening || codespeak.voiceProcessing"
       }
     ],
     "views": {
@@ -369,11 +444,6 @@
           "type": "string",
           "default": "gpt-5.6-sol",
           "description": "OpenAI model used for primary AI requests."
-        },
-        "codespeak.ai.demoMode": {
-          "type": "boolean",
-          "default": false,
-          "description": "Use deterministic local demo responses without contacting OpenAI or Gemini. Demo responses are clearly identified and are not semantic AI analysis."
         },
         "codespeak.voice.language": {
           "type": "string",
@@ -462,7 +532,6 @@
             "blind",
             "low-vision",
             "dyslexia",
-            "motor",
             "adhd",
             "custom"
           ],
@@ -470,18 +539,110 @@
             "Screen-reader-centered interaction and concise structural narration.",
             "High-clarity visual presentation with optional spoken support.",
             "Reduced reading complexity and structured explanations.",
-            "Reduced interaction precision and stronger confirmation support.",
             "Reduced distraction and shorter, grouped information.",
             "User-defined accessibility behavior."
           ],
           "default": "custom",
           "description": "Default accessibility behavior profile. Visual presets are applied to workspace settings and restored when Custom Mode is selected."
         },
+        "codespeak.dyslexia.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Indicates whether CodeSpeak Dyslexia Mode is active. Use the toggle command to change the mode safely."
+        },
+        "codespeak.dyslexia.fontFamily": {
+          "type": "string",
+          "default": "OpenDyslexic",
+          "description": "Preferred installed editor font while Dyslexia Mode is active. Safe monospace fallbacks are always added."
+        },
+        "codespeak.dyslexia.fontSize": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 40,
+          "default": 16,
+          "description": "Editor font size used by Dyslexia Mode."
+        },
+        "codespeak.dyslexia.lineHeight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 60,
+          "default": 26,
+          "description": "Editor line height used by Dyslexia Mode."
+        },
+        "codespeak.dyslexia.letterSpacing": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "default": 0.5,
+          "description": "Additional character spacing used by Dyslexia Mode."
+        },
+        "codespeak.dyslexia.cursorWidth": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 2,
+          "description": "Editor cursor width used by Dyslexia Mode."
+        },
+        "codespeak.dyslexia.hideMinimap": {
+          "type": "boolean",
+          "default": true,
+          "description": "Hide the editor minimap while Dyslexia Mode is active."
+        },
+        "codespeak.dyslexia.hideBreadcrumbs": {
+          "type": "boolean",
+          "default": true,
+          "description": "Hide editor breadcrumbs while Dyslexia Mode is active."
+        },
+        "codespeak.dyslexia.disableCodeLens": {
+          "type": "boolean",
+          "default": false,
+          "description": "Disable CodeLens while Dyslexia Mode is active."
+        },
+        "codespeak.dyslexia.disableStickyScroll": {
+          "type": "boolean",
+          "default": true,
+          "description": "Disable sticky scroll while Dyslexia Mode is active."
+        },
+        "codespeak.dyslexia.hideIndentGuides": {
+          "type": "boolean",
+          "default": false,
+          "description": "Hide indentation guides while Dyslexia Mode is active."
+        },
+        "codespeak.dyslexia.highlightActiveLine": {
+          "type": "boolean",
+          "default": true,
+          "description": "Highlight the active editor line while Dyslexia Mode is active."
+        },
+        "codespeak.dyslexia.highlightCurrentBlock": {
+          "type": "boolean",
+          "default": true,
+          "description": "Highlight the function or code block containing the cursor."
+        },
+        "codespeak.dyslexia.enableBracketColors": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable native bracket pair colorization while Dyslexia Mode is active."
+        },
+        "codespeak.dyslexia.enableBracketGuides": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable native bracket pair guides while Dyslexia Mode is active."
+        },
+        "codespeak.dyslexia.enableSimplifiedExplanations": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use short plain language AI explanations for standard explain commands in Dyslexia Mode."
+        },
+        "codespeak.dyslexia.dimInactiveCode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Dim code outside the current block. Disabled by default to preserve theme contrast."
+        },
         "codespeak.focus.minutes": {
           "type": "number",
           "minimum": 1,
           "maximum": 120,
-          "default": 25,
+          "default": 5,
           "description": "Length of an ADHD Mode focus session in minutes."
         },
         "codespeak.focus.breakMinutes": {

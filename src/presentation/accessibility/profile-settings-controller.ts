@@ -2,23 +2,19 @@ import * as vscode from 'vscode';
 import type { ConfigurationGateway } from '../../application/ports/platform/configuration-gateway';
 import type { Logger } from '../../application/ports/platform/logger';
 import { profileSettingPreset } from './profile-setting-presets';
+import { readDyslexiaSettings } from './dyslexia/dyslexia-settings';
+import {
+  planProfileSettingTransition,
+  type ProfileSettingsState,
+  type StoredSetting,
+} from './dyslexia/settings-backup';
 
-const STATE_KEY = 'codespeak.profileSettingsState.v1';
-
-interface StoredSetting {
-  readonly exists: boolean;
-  readonly value?: unknown;
-}
-
-interface ProfileSettingsState {
-  readonly baseline: Readonly<Record<string, StoredSetting>>;
-  readonly applied: Readonly<Record<string, unknown>>;
-}
+const STATE_KEY = 'codespeak.profileSettingsState.v2';
 
 const EMPTY_STATE: ProfileSettingsState = { baseline: {}, applied: {} };
 
 export class ProfileSettingsController implements vscode.Disposable {
-  private applying = false;
+  private applyQueue: Promise<void> = Promise.resolve();
   private readonly stopConfigurationListener: () => void;
 
   public constructor(
@@ -33,41 +29,29 @@ export class ProfileSettingsController implements vscode.Disposable {
   }
 
   public async applyCurrentProfile(): Promise<void> {
-    if (this.applying) return;
-    this.applying = true;
-    try {
-      const stored = this.state.get<ProfileSettingsState>(STATE_KEY, EMPTY_STATE);
-      const baseline: Record<string, StoredSetting> = { ...stored.baseline };
-      await this.restoreAppliedSettings(stored.applied, baseline);
-
-      const preset = profileSettingPreset(this.configuration.get().accessibilityProfile);
-      const applied: Record<string, unknown> = {};
-      for (const [fullKey, value] of Object.entries(preset)) {
-        baseline[fullKey] = this.readWorkspaceSetting(fullKey);
-        await this.updateWorkspaceSetting(fullKey, value);
-        applied[fullKey] = value;
-      }
-      await this.state.update(STATE_KEY, { baseline, applied } satisfies ProfileSettingsState);
-    } catch (error: unknown) {
-      this.logger.error('Could not apply the accessibility profile settings.', error);
-    } finally {
-      this.applying = false;
-    }
+    this.applyQueue = this.applyQueue
+      .then(() => this.applyCurrentProfilePass())
+      .catch((error: unknown) => {
+        this.logger.error('Could not apply the accessibility profile settings.', error);
+      });
+    await this.applyQueue;
   }
 
-  private async restoreAppliedSettings(
-    applied: Readonly<Record<string, unknown>>,
-    baseline: Record<string, StoredSetting>,
-  ): Promise<void> {
-    for (const [fullKey, appliedValue] of Object.entries(applied)) {
-      const current = this.readWorkspaceSetting(fullKey);
-      if (!settingsEqual(current.value, appliedValue) || !current.exists) {
-        baseline[fullKey] = current;
-        continue;
-      }
-      const original = baseline[fullKey] ?? { exists: false };
-      await this.updateWorkspaceSetting(fullKey, original.exists ? original.value : undefined);
+  private async applyCurrentProfilePass(): Promise<void> {
+    const stored = this.state.get<ProfileSettingsState>(STATE_KEY, EMPTY_STATE);
+    const preset = profileSettingPreset(
+      this.configuration.get().accessibilityProfile,
+      readDyslexiaSettings(vscode.workspace.getConfiguration('codespeak.dyslexia')),
+    );
+    const keys = new Set([...Object.keys(stored.applied), ...Object.keys(preset)]);
+    const current = Object.fromEntries(
+      [...keys].map((key) => [key, this.readWorkspaceSetting(key)]),
+    );
+    const transition = planProfileSettingTransition(stored, current, preset);
+    for (const write of transition.writes) {
+      await this.updateWorkspaceSetting(write.key, write.value);
     }
+    await this.state.update(STATE_KEY, transition.state);
   }
 
   private readWorkspaceSetting(fullKey: string): StoredSetting {
@@ -94,8 +78,4 @@ function splitSettingKey(fullKey: string): { readonly section: string; readonly 
     throw new Error(`Invalid VS Code setting key: ${fullKey}`);
   }
   return { section: fullKey.slice(0, separator), key: fullKey.slice(separator + 1) };
-}
-
-function settingsEqual(first: unknown, second: unknown): boolean {
-  return JSON.stringify(first) === JSON.stringify(second);
 }

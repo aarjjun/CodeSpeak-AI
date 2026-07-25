@@ -17,6 +17,18 @@ export class AccessibleSpeechService implements SpokenFeedback {
   ) {}
 
   public async speak(message: string, priority: SpeechPriority = 'normal'): Promise<void> {
+    await this.deliver(message, priority, this.profiles.current().speech.enabled);
+  }
+
+  public async speakAlways(message: string, priority: SpeechPriority = 'normal'): Promise<void> {
+    await this.deliver(message, priority, true);
+  }
+
+  private async deliver(
+    message: string,
+    priority: SpeechPriority,
+    speechEnabled: boolean,
+  ): Promise<void> {
     const text = message.trim();
     if (text.length === 0) return;
     if (priority === 'critical') await this.synthesizer.stop();
@@ -25,7 +37,7 @@ export class AccessibleSpeechService implements SpokenFeedback {
     await this.userInterface.announce(text, priority === 'critical' ? 'assertive' : 'polite');
     const preferences = this.profiles.current().speech;
     const settings = this.configuration.get();
-    if (!preferences.enabled) return;
+    if (!speechEnabled) return;
     const result = await this.synthesizer.speak(text, {
       language: preferences.language,
       rate: Math.min(2, Math.max(0.5, preferences.rate + this.rateAdjustment)),
@@ -41,6 +53,11 @@ export class AccessibleSpeechService implements SpokenFeedback {
     this.pausedMessage = undefined;
     await this.synthesizer.stop();
     await this.userInterface.announce('Speech stopped.');
+  }
+
+  public async interrupt(): Promise<void> {
+    this.pausedMessage = undefined;
+    await this.synthesizer.stop();
   }
 
   public async pause(): Promise<void> {

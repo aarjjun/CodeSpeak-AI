@@ -5,8 +5,11 @@ import type { SpeechSynthesizer } from '../../../src/application/ports/speech/sp
 import { AccessibleSpeechService } from '../../../src/application/services/accessible-speech-service';
 import { AccessibilityProfileService } from '../../../src/application/services/accessibility-profile-service';
 import { AccessibilityProfileCatalog } from '../../../src/domain/accessibility/accessibility-profile-catalog';
+import type { AccessibilityProfileId } from '../../../src/domain/accessibility/accessibility-profile';
 
-function configuration(): ConfigurationGateway {
+function configuration(
+  accessibilityProfile: AccessibilityProfileId = 'blind',
+): ConfigurationGateway {
   return {
     get: () => ({
       model: 'test',
@@ -16,7 +19,7 @@ function configuration(): ConfigurationGateway {
       voiceRate: 1,
       voiceRateConfigured: false,
       voiceVolume: 80,
-      accessibilityProfile: 'blind',
+      accessibilityProfile,
       autoExplainErrors: false,
       autoReadSummaries: true,
       autoReadSummariesConfigured: false,
@@ -61,5 +64,46 @@ describe('AccessibleSpeechService', () => {
       expect.objectContaining({ rate: 1, volume: 80 }),
     );
     expect(announce).toHaveBeenCalledWith('Important error', 'assertive');
+
+    const announcementCount = announce.mock.calls.length;
+    await service.interrupt();
+    expect(stop).toHaveBeenCalledTimes(2);
+    expect(announce).toHaveBeenCalledTimes(announcementCount);
+  });
+
+  it('forces a spoken alert when the active profile normally disables speech', async () => {
+    const speak = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    const synthesizer: SpeechSynthesizer = {
+      stop: vi.fn().mockResolvedValue(undefined),
+      speak,
+    };
+    const userInterface = {
+      announce: vi.fn().mockResolvedValue(undefined),
+      showInformation: () => Promise.resolve(),
+      showWarning: () => Promise.resolve(),
+      showError: () => Promise.resolve(),
+      choose: () => Promise.resolve(undefined),
+      requestText: () => Promise.resolve(undefined),
+      confirm: () => Promise.resolve(true),
+      showProgress: <T>(_title: string, operation: (signal: AbortSignal) => Promise<T>) =>
+        operation(new AbortController().signal),
+    } satisfies UserInterfaceGateway;
+    const settings = configuration('adhd');
+    const service = new AccessibleSpeechService(
+      synthesizer,
+      new AccessibilityProfileService(settings, new AccessibilityProfileCatalog()),
+      settings,
+      userInterface,
+    );
+
+    await service.speak('Ordinary ADHD announcement');
+    expect(speak).not.toHaveBeenCalled();
+
+    await service.speakAlways('Focus session complete', 'critical');
+    expect(speak).toHaveBeenCalledOnce();
+    expect(speak).toHaveBeenCalledWith(
+      'Focus session complete',
+      expect.objectContaining({ rate: 1, volume: 80 }),
+    );
   });
 });

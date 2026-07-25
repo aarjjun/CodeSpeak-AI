@@ -71,29 +71,6 @@ const profiles: readonly AccessibilityProfile[] = [
     },
   },
   {
-    id: 'motor',
-    name: 'Motor Accessibility Mode',
-    speech: {
-      enabled: true,
-      rate: 1,
-      language: 'en-US',
-      announceProgress: true,
-      autoReadSummaries: false,
-    },
-    reading: {
-      verbosity: 'balanced',
-      describePunctuation: false,
-      summarizeBeforeReading: true,
-      maximumItemsBeforeGrouping: 7,
-    },
-    interaction: {
-      confirmationLevel: 'all-actions',
-      preserveFocus: true,
-      reduceMotion: true,
-      reduceDistractions: false,
-    },
-  },
-  {
     id: 'adhd',
     name: 'ADHD Mode',
     speech: {

@@ -8,7 +8,7 @@ Version `0.2.0` is a preview release. It focuses on accessible code understandin
 
 ## Why CodeSpeak AI
 
-Most developer tools assume that every developer can scan dense interfaces, operate a keyboard comfortably, interpret compiler terminology, and visually reconstruct source-code structure. CodeSpeak AI adapts these workflows for blind and low-vision developers, motor-impaired developers, dyslexic and ADHD programmers, older beginners, and students.
+Most developer tools assume that every developer can scan dense interfaces, interpret compiler terminology, and visually reconstruct source-code structure. CodeSpeak AI adapts these workflows for blind and low-vision developers, dyslexic and ADHD programmers, older beginners, and students.
 
 It is not an autonomous coding agent and it does not silently edit files. AI output is previewed, announced, and confirmed before it changes source code.
 
@@ -21,8 +21,10 @@ It is not an autonomous coding agent and it does not silently edit files. AI out
 - Read JavaScript and TypeScript structure using the TypeScript AST rather than regular expressions.
 - Find files, lines, symbols, and diagnostics with keyboard-accessible native controls.
 - Check JSX and TSX for missing alternative text, labels, keyboard handlers, focusability, and accessible names.
-- Apply accessibility profiles for blind, low-vision, dyslexia, motor-accessibility, and ADHD workflows.
-- Apply reversible visual presets for readable typography, low-vision magnification, reduced-distraction focus, and motor-friendly controls.
+- Apply accessibility profiles for blind, low-vision, dyslexia, and ADHD workflows.
+- Apply reversible visual presets for readable typography, low-vision magnification, and reduced-distraction focus.
+- Configure Dyslexia Mode typography, visual simplification, block tracking, simple explanations,
+  focused reading, and ambiguous character assistance.
 - Accept allowlisted voice commands using local VS Code Speech transcription.
 - Resolve spoken input as commands, navigation, Copilot requests, code actions, reading, or explicit dictation in Blind Mode.
 - Route live AI requests through OpenAI and speak the response in Blind Mode.
@@ -48,9 +50,11 @@ It is not an autonomous coding agent and it does not silently edit files. AI out
 
 For voice input, install VS Code Speech and press `Ctrl+Alt+Space` on Windows/Linux or `Cmd+Alt+Space` on macOS. Press the shortcut again to stop listening and process the transcript. The shortcut is configurable through VS Code Keyboard Shortcuts.
 
-To test the complete Blind Mode command pipeline without a microphone, run **CodeSpeak AI: Enter Voice Command as Text** and enter the phrase you want to simulate.
+Press `Ctrl+Alt+Escape` on Windows/Linux or `Cmd+Alt+Escape` on macOS to discard
+active listening or abort the current voice command. The same action is available as
+**CodeSpeak AI: Cancel Current Voice Command** and from the voice status bar item while processing.
 
-For an offline presentation, run **CodeSpeak AI: Enable or Disable Local Demo AI**. Demo mode uses clearly identified deterministic responses, does not require an API key, and does not contact OpenAI or Gemini. Disable it to restore live OpenAI requests with automatic Gemini fallback.
+To test the complete Blind Mode command pipeline without a microphone, run **CodeSpeak AI: Enter Voice Command as Text** and enter the phrase you want to simulate.
 
 ## Commands
 
@@ -75,7 +79,14 @@ For an offline presentation, run **CodeSpeak AI: Enable or Disable Local Demo AI
 | Check Current File Accessibility          | Publish deterministic JSX/TSX findings.                       |
 | Clear Accessibility Findings              | Remove CodeSpeak findings from Problems.                      |
 | Start or Stop Voice Command               | Capture and process one voice command.                        |
+| Cancel Current Voice Command              | Discard listening or abort current voice processing.          |
 | Start/Stop Continuous Voice Mode          | Process utterances after a short pause with explicit consent. |
+| Toggle Dyslexia Mode                      | Apply or safely restore configurable reading preferences.     |
+| Configure Dyslexia Mode and Font          | Change typography and optional visual simplification.         |
+| Explain Current Error Simply              | Explain a small diagnostic context in short plain language.   |
+| Explain Current Line or Block             | Process code in smaller reading chunks.                       |
+| Toggle Dyslexia Focus Mode                | Use the native focused editor layout temporarily.             |
+| Read Ambiguous Characters                 | Identify commonly confused characters on request.             |
 | Read Selection Aloud / Stop Reading Aloud | Control desktop speech output.                                |
 | Undo / Redo                               | Invoke editor history with accessible command names.          |
 
@@ -92,7 +103,6 @@ All commands are available through the keyboard-accessible Command Palette. Voic
 | `codespeak.voice.volume`                          | `100`              | Speech output volume from zero to one hundred.                                              |
 | `codespeak.voice.name`                            | empty              | Preferred operating system voice name.                                                      |
 | `codespeak.voice.activationMode`                  | `toggle`           | Starts one toggle session or continuous listening.                                          |
-| `codespeak.ai.demoMode`                           | `false`            | Uses deterministic local demo responses without an API key or external request.             |
 | `codespeak.voice.silenceTimeoutSeconds`           | `1.5`              | Processes an utterance after this pause following recognized speech.                        |
 | `codespeak.voice.initialSpeechTimeoutSeconds`     | `12`               | Waits this long for the first recognized speech before ending the session.                  |
 | `codespeak.voice.continuousListening`             | `false`            | Restarts listening after each recognized continuous utterance.                              |
@@ -102,7 +112,7 @@ All commands are available through the keyboard-accessible Command Palette. Voic
 | `codespeak.privacy.includeSelectionInAiRequests`  | `true`             | Allows selected code in contextual Copilot prompts.                                         |
 | `codespeak.privacy.storeVoiceTranscripts`         | `false`            | Reserved privacy control. Transcripts are not stored in this release.                       |
 | `codespeak.accessibilityProfile`                  | `custom`           | Active accessibility profile.                                                               |
-| `codespeak.focus.minutes`                         | `25`               | Length of an ADHD Mode focus session in minutes.                                            |
+| `codespeak.focus.minutes`                         | `5`                | Length of an ADHD Mode focus session in minutes.                                            |
 | `codespeak.focus.breakMinutes`                    | `5`                | Length of the break countdown after a focus session.                                        |
 | `codespeak.autoExplainErrors`                     | `false`            | Announces newly available workspace errors and directs the user to the explanation command. |
 | `codespeak.autoReadSummaries`                     | `false`            | Reads generated summaries when speech is enabled.                                           |

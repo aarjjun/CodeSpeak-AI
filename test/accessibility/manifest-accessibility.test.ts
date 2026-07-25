@@ -71,6 +71,16 @@ describe('accessible extension manifest', () => {
     ).toBe(true);
   });
 
+  it('provides a keyboard path that cancels listening and processing', () => {
+    const cancelBinding = manifest.contributes.keybindings.find(
+      (binding) => binding.command === CommandIds.voiceCancelCurrent,
+    );
+    expect(cancelBinding?.key).toBe('ctrl+alt+escape');
+    expect(cancelBinding?.mac).toBe('cmd+alt+escape');
+    expect(cancelBinding?.when).toContain('codespeak.voiceListening');
+    expect(cancelBinding?.when).toContain('codespeak.voiceProcessing');
+  });
+
   it('documents every user-facing setting and keeps enum descriptions aligned', () => {
     for (const [setting, contribution] of Object.entries(
       manifest.contributes.configuration.properties,
@@ -80,5 +90,27 @@ describe('accessible extension manifest', () => {
         expect(contribution.enumDescriptions, setting).toHaveLength(contribution.enum.length);
       }
     }
+  });
+
+  it('does not expose removed Motor Mode or local demo AI controls', () => {
+    const profiles =
+      manifest.contributes.configuration.properties['codespeak.accessibilityProfile']?.enum;
+    expect(profiles).not.toContain('motor');
+    expect(manifest.contributes.configuration.properties).not.toHaveProperty(
+      'codespeak.ai.demoMode',
+    );
+    expect(manifest.contributes.commands.map((command) => command.command)).not.toContain(
+      'codespeak.ai.toggleDemoMode',
+    );
+  });
+
+  it('registers Dyslexia Mode commands and voice aliases through the shared registry', () => {
+    const aliases = new Map(
+      CODE_SPEAK_COMMANDS.map((command) => [command.id, command.voiceAliases]),
+    );
+    expect(aliases.get(CommandIds.toggleDyslexiaMode)).toContain('enable dyslexia mode');
+    expect(aliases.get(CommandIds.configureDyslexiaFont)).toContain('change dyslexia font');
+    expect(aliases.get(CommandIds.explainCurrentLineSimply)).toContain('explain current line');
+    expect(aliases.get(CommandIds.readAmbiguousCharacters)).toContain('read ambiguous characters');
   });
 });

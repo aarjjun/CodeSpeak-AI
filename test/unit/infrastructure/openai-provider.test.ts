@@ -52,6 +52,20 @@ afterEach(() => {
 });
 
 describe('OpenAiProvider', () => {
+  it('does not send a request when voice cancellation already aborted the signal', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const provider = new OpenAiProvider(secretStore('openai-test-key'), configuration, prompts);
+    const controller = new AbortController();
+    controller.abort();
+
+    const result = await provider.generate(request, generatedCodeParser, controller.signal);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('cancelled');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('returns a secure key recovery action without making a request when no key exists', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

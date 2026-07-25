@@ -14,6 +14,8 @@ const PROMPT_FILES: Readonly<Record<string, string>> = {
   'learning.assist': 'learning-assistance.prompt.md',
   'summary.generate': 'summary-generation.prompt.md',
   'voice.classify': 'voice-intent-classification.prompt.md',
+  'dyslexia.code.explain': 'dyslexia-code-explanation.prompt.md',
+  'dyslexia.diagnostic.explain': 'dyslexia-diagnostic-explanation.prompt.md',
 };
 
 export class FilePromptRepository implements PromptRepository {

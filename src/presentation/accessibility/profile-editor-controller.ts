@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import type { ConfigurationGateway } from '../../application/ports/platform/configuration-gateway';
+import { findIndentationBlock } from './dyslexia/active-block-highlighter';
+import { readDyslexiaSettings } from './dyslexia/dyslexia-settings';
 
 export class ProfileEditorController implements vscode.Disposable {
   private readonly activeLineDecoration = vscode.window.createTextEditorDecorationType({
@@ -17,6 +19,9 @@ export class ProfileEditorController implements vscode.Disposable {
     borderWidth: '0 0 0 2px',
     borderStyle: 'solid',
     borderColor: new vscode.ThemeColor('focusBorder'),
+  });
+  private readonly inactiveCodeDecoration = vscode.window.createTextEditorDecorationType({
+    opacity: '0.45',
   });
   private readonly subscriptions: vscode.Disposable[];
   private readonly stopConfigurationListener: () => void;
@@ -42,24 +47,39 @@ export class ProfileEditorController implements vscode.Disposable {
     void vscode.commands.executeCommand(
       'setContext',
       'codespeak.voiceFirstProfile',
-      profile === 'blind' || profile === 'motor',
+      profile === 'blind',
     );
+    for (const visibleEditor of vscode.window.visibleTextEditors) {
+      if (visibleEditor === editor) continue;
+      this.clearDecorations(visibleEditor);
+    }
     if (editor === undefined) return;
+    const dyslexia = readDyslexiaSettings(vscode.workspace.getConfiguration('codespeak.dyslexia'));
+    const dyslexiaActive = profile === 'dyslexia';
     editor.setDecorations(
       this.activeLineDecoration,
-      profile === 'adhd'
+      profile === 'adhd' || (dyslexiaActive && dyslexia.highlightActiveLine)
         ? [new vscode.Range(editor.selection.active.line, 0, editor.selection.active.line, 0)]
         : [],
     );
     editor.setDecorations(
       this.bracketDecoration,
-      profile === 'dyslexia' ? this.bracketRanges(editor.document) : [],
+      dyslexiaActive && dyslexia.enableBracketColors ? this.bracketRanges(editor.document) : [],
     );
-    const activeBlock = profile === 'adhd' ? await this.findActiveSymbolRange(editor) : undefined;
+    const activeBlock =
+      profile === 'adhd' || (dyslexiaActive && dyslexia.highlightCurrentBlock)
+        ? await this.findActiveBlockRange(editor, dyslexiaActive)
+        : undefined;
     if (sequence !== this.renderSequence || editor !== vscode.window.activeTextEditor) return;
     editor.setDecorations(
       this.activeBlockDecoration,
       activeBlock === undefined ? [] : [activeBlock],
+    );
+    editor.setDecorations(
+      this.inactiveCodeDecoration,
+      dyslexiaActive && dyslexia.dimInactiveCode && activeBlock !== undefined
+        ? this.inactiveRanges(editor.document, activeBlock)
+        : [],
     );
   }
 
@@ -89,12 +109,69 @@ export class ProfileEditorController implements vscode.Disposable {
     }
   }
 
+  private async findActiveBlockRange(
+    editor: vscode.TextEditor,
+    useFallback: boolean,
+  ): Promise<vscode.Range | undefined> {
+    const symbol = await this.findActiveSymbolRange(editor);
+    if (!useFallback) return symbol;
+    const lines = Array.from(
+      { length: editor.document.lineCount },
+      (_, index) => editor.document.lineAt(index).text,
+    );
+    const block = findIndentationBlock(lines, editor.selection.active.line);
+    const fallback = new vscode.Range(
+      block.startLine,
+      0,
+      block.endLine,
+      editor.document.lineAt(block.endLine).text.length,
+    );
+    return symbol === undefined || rangeSize(fallback) < rangeSize(symbol) ? fallback : symbol;
+  }
+
+  private inactiveRanges(
+    document: vscode.TextDocument,
+    activeBlock: vscode.Range,
+  ): readonly vscode.Range[] {
+    const ranges: vscode.Range[] = [];
+    if (activeBlock.start.line > 0) {
+      ranges.push(
+        new vscode.Range(
+          0,
+          0,
+          activeBlock.start.line - 1,
+          document.lineAt(activeBlock.start.line - 1).text.length,
+        ),
+      );
+    }
+    if (activeBlock.end.line < document.lineCount - 1) {
+      const lastLine = document.lineCount - 1;
+      ranges.push(
+        new vscode.Range(
+          activeBlock.end.line + 1,
+          0,
+          lastLine,
+          document.lineAt(lastLine).text.length,
+        ),
+      );
+    }
+    return ranges;
+  }
+
+  private clearDecorations(editor: vscode.TextEditor): void {
+    editor.setDecorations(this.activeLineDecoration, []);
+    editor.setDecorations(this.bracketDecoration, []);
+    editor.setDecorations(this.activeBlockDecoration, []);
+    editor.setDecorations(this.inactiveCodeDecoration, []);
+  }
+
   public dispose(): void {
     this.stopConfigurationListener();
     for (const subscription of this.subscriptions) subscription.dispose();
     this.activeLineDecoration.dispose();
     this.bracketDecoration.dispose();
     this.activeBlockDecoration.dispose();
+    this.inactiveCodeDecoration.dispose();
   }
 }
 

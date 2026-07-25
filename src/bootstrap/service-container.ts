@@ -17,8 +17,6 @@ import { OutputChannelLogger } from '../infrastructure/logging/output-channel-lo
 import { GeminiProvider } from '../infrastructure/ai/gemini/gemini-provider';
 import { OpenAiProvider } from '../infrastructure/ai/openai/openai-provider';
 import { FallbackAiProvider } from '../infrastructure/ai/fallback/fallback-ai-provider';
-import { DemoAwareAiProvider } from '../infrastructure/ai/demo/demo-aware-ai-provider';
-import { LocalDemoAiProvider } from '../infrastructure/ai/demo/local-demo-ai-provider';
 import { TypeScriptAccessibilityAnalyzer } from '../infrastructure/accessibility/typescript-accessibility-analyzer';
 import { FilePromptRepository } from '../infrastructure/ai/prompts/file-prompt-repository';
 import { VsCodeSecretStore } from '../infrastructure/persistence/vscode-secret-store';
@@ -36,6 +34,7 @@ import { DiagnosticChangeNotifier } from '../presentation/accessibility/diagnost
 import { ProfileEditorController } from '../presentation/accessibility/profile-editor-controller';
 import { ProfileSettingsController } from '../presentation/accessibility/profile-settings-controller';
 import { CodeSpeakDashboardProvider } from '../presentation/providers/codespeak-dashboard-provider';
+import { VoiceCommandCancellation } from '../presentation/voice/voice-command-cancellation';
 
 export interface ServiceContainer {
   readonly accessibilityAnalyzer: AccessibilityAnalyzer;
@@ -52,12 +51,14 @@ export interface ServiceContainer {
   readonly state: StateStore;
   readonly userInterface: UserInterfaceGateway;
   readonly workspace: WorkspaceGateway;
+  readonly voiceCancellation: VoiceCommandCancellation;
 }
 
 export function createServiceContainer(context: vscode.ExtensionContext): ServiceContainer {
   const outputChannel = vscode.window.createOutputChannel('CodeSpeak AI');
   const logger = new OutputChannelLogger(outputChannel);
-  const userInterface = new VsCodeUserInterfaceGateway();
+  const voiceCancellation = new VoiceCommandCancellation();
+  const userInterface = new VsCodeUserInterfaceGateway(voiceCancellation);
   context.subscriptions.push(outputChannel, userInterface);
   const configuration = new VsCodeConfigurationGateway();
   const secrets = new VsCodeSecretStore(context.secrets);
@@ -73,9 +74,7 @@ export function createServiceContainer(context: vscode.ExtensionContext): Servic
       'assertive',
     );
   });
-  const ai = new DemoAwareAiProvider(liveAi, new LocalDemoAiProvider(), () =>
-    vscode.workspace.getConfiguration('codespeak').get<boolean>('ai.demoMode', false),
-  );
+  const ai = liveAi;
   const accessibilityReports = new AccessibilityDiagnosticsProvider();
   const profileCatalog = new AccessibilityProfileCatalog();
   context.subscriptions.push(accessibilityReports);
@@ -111,6 +110,7 @@ export function createServiceContainer(context: vscode.ExtensionContext): Servic
     speech: new DesktopSpeechSynthesizer(vscode.env.remoteName === undefined),
     state: new VsCodeStateStore(context.globalState),
     userInterface,
+    voiceCancellation,
     workspace: new VsCodeWorkspaceGateway(),
   };
 }

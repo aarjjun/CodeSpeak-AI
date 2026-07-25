@@ -4,6 +4,7 @@ import type {
   CodeSpeakConfiguration,
   ConfigurationGateway,
 } from '../application/ports/platform/configuration-gateway';
+import { configurationScopeForProfile } from './configuration-target';
 
 const SECTION = 'codespeak';
 const DEFAULT_MODEL = 'gemini-3.5-flash';
@@ -15,7 +16,6 @@ const PROFILE_IDS: readonly AccessibilityProfileId[] = [
   'blind',
   'low-vision',
   'dyslexia',
-  'motor',
   'adhd',
   'custom',
 ];
@@ -64,9 +64,17 @@ export class VsCodeConfigurationGateway implements ConfigurationGateway {
   }
 
   public async setAccessibilityProfile(profileId: AccessibilityProfileId): Promise<void> {
-    await vscode.workspace
-      .getConfiguration(SECTION)
-      .update('accessibilityProfile', profileId, vscode.ConfigurationTarget.Global);
+    const resource =
+      vscode.window.activeTextEditor?.document.uri ?? vscode.workspace.workspaceFolders?.[0]?.uri;
+    const configuration = vscode.workspace.getConfiguration(SECTION, resource);
+    const scope = configurationScopeForProfile(
+      configuration.inspect<unknown>('accessibilityProfile'),
+    );
+    const target =
+      scope === 'workspace'
+        ? vscode.ConfigurationTarget.Workspace
+        : vscode.ConfigurationTarget.Global;
+    await configuration.update('accessibilityProfile', profileId, target);
   }
 
   private isProfileId(value: string): value is AccessibilityProfileId {
