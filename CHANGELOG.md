@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+## [0.3.0] - 2026-07-26
+
 ### Added
 
 - Voice-first Blind Mode with deterministic command resolution and explicit dictation fallback.
@@ -19,6 +21,11 @@ This project follows [Semantic Versioning](https://semver.org/).
 - Dyslexia-friendly diagnostic, selection, line, block, function, file, and step explanations.
 - Dyslexia font setup, focused reading, ambiguous character assistance, status indication, and
   voice aliases.
+
+### Security
+
+- Updated the transitive `brace-expansion` dependency to resolve the high-severity
+  GHSA-mh99-v99m-4gvg advisory reported by `npm audit`.
 
 ## [0.2.1] - 2026-07-23
 

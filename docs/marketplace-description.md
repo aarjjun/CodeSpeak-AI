@@ -18,7 +18,7 @@ CodeSpeak AI adapts Visual Studio Code for developers who are blind, have low vi
 
 ## Designed for trust
 
-CodeSpeak does not silently modify source code. Generated edits are previewed and confirmed. Multi-file summaries require confirmation and use strict file and character budgets. API keys use VS Code SecretStorage. Voice audio remains inside VS Code Speech, and CodeSpeak collects no telemetry in the `0.2.1` preview.
+CodeSpeak does not silently modify source code. Generated edits are previewed and confirmed. Multi-file summaries require confirmation and use strict file and character budgets. API keys use VS Code SecretStorage. Voice audio remains inside VS Code Speech, and CodeSpeak collects no telemetry in the `0.3.0` preview.
 
 ## Keyboard first
 
