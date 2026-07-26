@@ -2,7 +2,7 @@
   "name": "codespeak-ai",
   "displayName": "CodeSpeak AI",
   "description": "The AI-powered accessibility assistant for developers.",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "publisher": "arjunanoop",
   "license": "SEE LICENSE IN LICENSE.txt",
